@@ -64,3 +64,15 @@ export interface DailyDrawRecord {
   isReversed: boolean;
   note: string;
 }
+
+// New Interface for Case Studies
+export interface CaseStudy {
+  id: string;
+  category: 'Love' | 'Career' | 'General' | 'Growth';
+  question: string;
+  context: string;
+  cardId: number;
+  isReversed: boolean;
+  interpretation: string;
+  keyPoints: string[];
+}

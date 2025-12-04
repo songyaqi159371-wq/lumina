@@ -1,6 +1,4 @@
-
-
-import { Suit, TarotCard, Spread } from './types';
+import { Suit, TarotCard, Spread, CaseStudy } from './types';
 
 // Helper to generate IDs
 let idCounter = 0;
@@ -1106,5 +1104,68 @@ export const spreads: Spread[] = [
       { id: 9, name: '愿望/恐惧', description: '你内心的希望或担忧' },
       { id: 10, name: '结果', description: '最终的预测结果' }
     ]
+  }
+];
+
+export const caseStudies: CaseStudy[] = [
+  {
+    id: 'cs1',
+    category: 'Love',
+    question: '我最近和伴侣争吵不断，这段关系还能继续吗？',
+    context: '求问者感到疲惫，觉得双方沟通无效，考虑分手但又舍不得。',
+    cardId: 52, // Three of Swords
+    isReversed: false,
+    interpretation: '宝剑三正位通常代表心碎、痛苦和分离。在这个情境下，它并不一定意味着关系的终结，但它明确指出了现在的痛苦是真实的，无法被忽视。它建议你们目前正处于情感的低谷，必须先承认并处理这份痛苦（无论是通过坦诚的沟通还是暂时的分开冷静），才能有疗愈的可能。这张牌提醒你，不要为了维持表面的和平而压抑内心的伤痛。',
+    keyPoints: ['承认痛苦的存在', '沟通中的伤害', '暂时的分离或冷静期']
+  },
+  {
+    id: 'cs2',
+    category: 'Career',
+    question: '我应该辞职去创业吗？',
+    context: '求问者目前有一份稳定的工作，但感到枯燥，一直梦想开一家咖啡店。',
+    cardId: 0, // The Fool
+    isReversed: false,
+    interpretation: '愚者牌代表着新的开始、冒险和无限的可能性。在这张牌的指引下，宇宙鼓励你迈出那一跳。虽然创业充满未知（就像愚者脚下的悬崖），但现在是你追随内心热情、不计后果去尝试的最佳时机。保持开放的心态，不要被过多的恐惧束缚。',
+    keyPoints: ['大胆尝试', '初学者的心态', '相信直觉']
+  },
+  {
+    id: 'cs3',
+    category: 'Growth',
+    question: '为什么我最近总是感到焦虑和失眠？',
+    context: '求问者身体检查无大碍，但总是担心未来，脑子里停不下来。',
+    cardId: 58, // Nine of Swords
+    isReversed: false,
+    interpretation: '宝剑九是典型的“焦虑牌”。画面中的人从噩梦中惊醒，象征着精神上的折磨。这张牌指出，你的焦虑很大程度上来源于你自己的思维模式，而非外界真实的威胁。你可能在脑海中把事情灾难化了。牌义建议你尝试冥想、书写或寻求心理咨询，将这些无形的恐惧具象化，你会发现它们并没有你想象中那么可怕。',
+    keyPoints: ['精神内耗', '过度担忧', '需要释放压力']
+  },
+  {
+    id: 'cs4',
+    category: 'Career',
+    question: '这个新项目能成功吗？',
+    context: '团队刚开始一个高风险高回报的项目，大家都很兴奋。',
+    cardId: 22, // Ace of Wands
+    isReversed: false,
+    interpretation: '权杖一正位是一个非常积极的信号！它象征着火元素的爆发力、灵感和行动力。这预示着项目有一个完美的开端，充满了激情和创造力。然而，Ace只是“开始”，它保证了爆发力，但长期的成功还需要后续的努力（火需要燃料维持）。目前的能量是非常有利于推进的。',
+    keyPoints: ['强劲的开端', '激情与动力', '把握机会']
+  },
+  {
+    id: 'cs5',
+    category: 'Love',
+    question: '单身很久了，近期会有桃花吗？',
+    context: '求问者渴望爱情，但社交圈很小。',
+    cardId: 33, // Knight of Wands
+    isReversed: false,
+    interpretation: '权杖骑士代表着一位充满魅力、热情但可能比较冲动的人。这暗示近期可能会遇到一个让你心跳加速的人，或者你需要像骑士一样主动出击，去拓展社交圈。这段关系可能来得快，充满了激情和冒险感，但也要注意它可能缺乏稳定性。总之，行动起来，不要等待！',
+    keyPoints: ['积极主动', '充满激情的邂逅', '快速发展']
+  },
+  {
+    id: 'cs6',
+    category: 'General',
+    question: '目前的财务状况如何改善？',
+    context: '收支平衡但存不下钱，感到焦虑。',
+    cardId: 67, // Four of Pentacles
+    isReversed: true,
+    interpretation: '星币四正位通常代表守财和吝啬，而逆位时，可能暗示你之前太过于执着于“存钱”或“安全感”，反而导致了财务能量的停滞；或者反过来，暗示你现在的开销失去了控制。结合语境，建议你重新审视你的理财观念：是为了省钱而降低了生活质量和赚钱的动力吗？适当的流动（投资自己或理财）可能比死守更有效。',
+    keyPoints: ['放开控制', '资金流动', '重新评估安全感']
   }
 ];
