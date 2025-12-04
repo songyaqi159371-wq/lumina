@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';

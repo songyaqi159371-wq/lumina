@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { tarotDeck } from '../constants';
 import CardFlip from '../components/CardFlip';
