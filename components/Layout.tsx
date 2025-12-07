@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Calendar, Compass, Layers, Home, Menu, X, Feather } from 'lucide-react';
+import { BookOpen, Compass, Layers, Home, Menu, X, Feather } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,7 +15,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/learn', label: '图鉴', icon: BookOpen },
     { path: '/practice', label: '练习', icon: Layers },
     { path: '/divination', label: '占卜', icon: Compass },
-    { path: '/journal', label: '日记', icon: Calendar },
   ];
 
   return (

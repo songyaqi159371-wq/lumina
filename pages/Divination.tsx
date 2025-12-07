@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { spreads, tarotDeck } from '../constants';
-import { Spread, DivinationResult } from '../types';
+import { Spread } from '../types';
 import CardFlip from '../components/CardFlip';
-import { saveHistory } from '../services/storage';
 import { interpretReading } from '../services/geminiService';
-import { Sparkles, BrainCircuit, RefreshCw, Save } from 'lucide-react';
+import { Sparkles, BrainCircuit, RefreshCw } from 'lucide-react';
 
 const Divination: React.FC = () => {
   const [step, setStep] = useState<'select' | 'input' | 'shuffle' | 'result'>('select');
@@ -54,15 +53,6 @@ const Divination: React.FC = () => {
 
     setDrawnCards(result);
     setRevealedIndices([]); // Reset revealed
-    
-    // Auto save to history
-    saveHistory({
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        question,
-        spreadId: selectedSpread.id,
-        cards: result
-    });
   };
 
   const handleCardClick = (index: number) => {

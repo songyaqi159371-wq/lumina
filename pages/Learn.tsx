@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, X, ChevronLeft, ChevronRight, Check, Download, Upload, Save } from 'lucide-react';
 import { tarotDeck, getCardImageUrl } from '../constants';
 import { Suit, TarotCard } from '../types';
-import { saveNote, getNote, getProgress, saveProgress } from '../services/storage';
+import { saveNote, getNote, getProgress, saveProgress, exportData, importData } from '../services/storage';
 
 const Learn: React.FC = () => {
   const location = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSuit, setFilterSuit] = useState<string>('all');
   const [selectedCard, setSelectedCard] = useState<TarotCard | null>(null);
   const [userNote, setUserNote] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
   
   // Calculate filtered cards
   const filteredCards = tarotDeck.filter(card => {
@@ -24,6 +27,7 @@ const Learn: React.FC = () => {
   useEffect(() => {
     if (selectedCard) {
         setUserNote(getNote(selectedCard.id));
+        setIsSaved(false);
         // Update progress
         const progress = getProgress();
         if (!progress.learnedCards.includes(selectedCard.id)) {
@@ -46,17 +50,31 @@ const Learn: React.FC = () => {
     }
   }, [location]);
 
-  const handleSaveNote = () => {
-      if (selectedCard) {
-          saveNote(selectedCard.id, userNote);
-          // Optional toast here
+  // Helper to save current note immediately
+  const saveCurrentNoteState = (card: TarotCard | null, note: string) => {
+      if (card) {
+          saveNote(card.id, note);
       }
+  };
+
+  const handleManualSave = () => {
+      saveCurrentNoteState(selectedCard, userNote);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+  };
+
+  const handleClose = () => {
+      // Auto-save on close
+      saveCurrentNoteState(selectedCard, userNote);
+      setSelectedCard(null);
   };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
     if (!selectedCard) return;
     
-    // Navigate within currently filtered list
+    // Auto-save before switching
+    saveCurrentNoteState(selectedCard, userNote);
+
     const list = filteredCards.length > 0 ? filteredCards : tarotDeck;
     const currentIndex = list.findIndex(c => c.id === selectedCard.id);
     
@@ -72,6 +90,28 @@ const Learn: React.FC = () => {
     setSelectedCard(list[newIndex]);
   };
 
+  // Data Restore Handler
+  const handleImportData = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      if (window.confirm("⚠️ 导入数据将覆盖当前的所有笔记和进度，确定要继续吗？")) {
+          try {
+              await importData(file);
+              alert("✅ 笔记数据已恢复！");
+              
+              // Refresh note if card is currently open
+              if (selectedCard) {
+                  setUserNote(getNote(selectedCard.id));
+              }
+          } catch (error) {
+              alert("❌ 恢复失败，文件格式错误");
+          }
+      }
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -81,31 +121,59 @@ const Learn: React.FC = () => {
             <p className="text-slate-400 text-sm mt-1">共 {tarotDeck.length} 张牌义解析</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto items-center">
+            
+            {/* Backup/Restore Controls */}
+            <div className="flex items-center gap-2 bg-mystic-800 p-1.5 rounded-lg border border-mystic-700 mr-2">
+                <button 
+                    onClick={exportData}
+                    className="p-2 text-slate-300 hover:text-white hover:bg-mystic-700 rounded-md transition"
+                    title="备份所有笔记 (下载 JSON)"
+                >
+                    <Download size={18} />
+                </button>
+                <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-slate-300 hover:text-white hover:bg-mystic-700 rounded-md transition"
+                    title="恢复笔记 (上传 JSON)"
+                >
+                    <Upload size={18} />
+                </button>
                 <input 
-                    type="text" 
-                    placeholder="搜索牌名、关键词..." 
-                    className="w-full pl-9 pr-4 py-2 bg-mystic-800 border border-mystic-700 rounded-lg text-sm focus:outline-none focus:border-mystic-500 transition focus:ring-1 focus:ring-mystic-500"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept=".json" 
+                    onChange={handleImportData}
                 />
             </div>
-            <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <select 
-                    className="w-full pl-9 pr-8 py-2 bg-mystic-800 border border-mystic-700 rounded-lg text-sm appearance-none focus:outline-none focus:border-mystic-500 cursor-pointer"
-                    value={filterSuit}
-                    onChange={(e) => setFilterSuit(e.target.value)}
-                >
-                    <option value="all">全部牌组</option>
-                    <option value={Suit.Major}>大阿卡那 (Major)</option>
-                    <option value={Suit.Wands}>权杖 (Wands)</option>
-                    <option value={Suit.Cups}>圣杯 (Cups)</option>
-                    <option value={Suit.Swords}>宝剑 (Swords)</option>
-                    <option value={Suit.Pentacles}>星币 (Pentacles)</option>
-                </select>
+
+            <div className="flex gap-3 w-full md:w-auto">
+                <div className="relative flex-1 md:flex-none">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input 
+                        type="text" 
+                        placeholder="搜索..." 
+                        className="w-full md:w-40 pl-9 pr-4 py-2 bg-mystic-800 border border-mystic-700 rounded-lg text-sm focus:outline-none focus:border-mystic-500 transition"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="relative flex-1 md:flex-none">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <select 
+                        className="w-full md:w-32 pl-9 pr-8 py-2 bg-mystic-800 border border-mystic-700 rounded-lg text-sm appearance-none focus:outline-none focus:border-mystic-500 cursor-pointer"
+                        value={filterSuit}
+                        onChange={(e) => setFilterSuit(e.target.value)}
+                    >
+                        <option value="all">全部</option>
+                        <option value={Suit.Major}>大阿卡那</option>
+                        <option value={Suit.Wands}>权杖</option>
+                        <option value={Suit.Cups}>圣杯</option>
+                        <option value={Suit.Swords}>宝剑</option>
+                        <option value={Suit.Pentacles}>星币</option>
+                    </select>
+                </div>
             </div>
         </div>
       </header>
@@ -139,7 +207,7 @@ const Learn: React.FC = () => {
 
       {/* Modal Detail View */}
       {selectedCard && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-flip-in" onClick={() => setSelectedCard(null)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-flip-in" onClick={handleClose}>
             
             {/* Prev Button */}
             <button 
@@ -165,7 +233,7 @@ const Learn: React.FC = () => {
                 className="relative bg-mystic-900 w-full max-w-4xl max-h-[85vh] rounded-2xl border border-mystic-600 shadow-2xl overflow-hidden flex flex-col md:flex-row z-[105]"
             >
                 <button 
-                    onClick={() => setSelectedCard(null)}
+                    onClick={handleClose}
                     className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white hover:bg-red-900/80 z-20 transition-colors"
                 >
                     <X size={20} />
@@ -219,22 +287,26 @@ const Learn: React.FC = () => {
                             <p className="text-slate-400 text-sm leading-relaxed">{selectedCard.description}</p>
                         </div>
 
-                        {/* Notes Section */}
-                        <div className="bg-mystic-800/50 p-4 rounded-xl border border-mystic-700 mt-4">
+                        {/* Notes Section with Auto-save */}
+                        <div className="bg-mystic-800/50 p-4 rounded-xl border border-mystic-700 mt-4 transition-colors focus-within:border-mystic-500 focus-within:bg-mystic-800">
                             <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-sm font-bold text-mystic-gold">🔮 学习笔记</h3>
+                                <h3 className="text-sm font-bold text-mystic-gold flex items-center gap-2">
+                                    🔮 学习笔记
+                                    <span className="text-xs font-normal text-slate-500">(自动保存)</span>
+                                </h3>
                                 <button 
-                                    onClick={handleSaveNote}
-                                    className="px-3 py-1 bg-mystic-700 hover:bg-mystic-600 text-white text-xs rounded transition border border-mystic-600"
+                                    onClick={handleManualSave}
+                                    className={`px-3 py-1 flex items-center gap-1 text-xs rounded transition border ${isSaved ? 'bg-green-900 border-green-700 text-green-300' : 'bg-mystic-700 hover:bg-mystic-600 text-white border-mystic-600'}`}
                                 >
-                                    保存
+                                    {isSaved ? <><Check size={12}/> 已保存</> : <><Save size={12}/> 保存</>}
                                 </button>
                             </div>
                             <textarea 
-                                className="w-full bg-mystic-900/80 text-slate-200 text-sm p-3 rounded-lg border border-mystic-700 focus:border-mystic-500 focus:outline-none min-h-[80px] resize-y placeholder-slate-600"
-                                placeholder="在这里记录你的感悟..."
+                                className="w-full bg-mystic-900/80 text-slate-200 text-sm p-3 rounded-lg border border-mystic-700 focus:border-mystic-500 focus:outline-none min-h-[100px] resize-y placeholder-slate-600"
+                                placeholder="在这里记录你的感悟... (离开或切换卡片时会自动保存)"
                                 value={userNote}
                                 onChange={(e) => setUserNote(e.target.value)}
+                                onBlur={handleManualSave} // Auto-save when focus leaves textarea
                             />
                         </div>
                     </div>
