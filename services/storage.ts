@@ -14,9 +14,27 @@ const INITIAL_PROGRESS: UserProgress = {
   lastLogin: ''
 };
 
+// Request browser persistence
+export const initStorage = async () => {
+  if (navigator.storage && navigator.storage.persist) {
+    try {
+      const isPersisted = await navigator.storage.persisted();
+      if (!isPersisted) {
+        await navigator.storage.persist();
+      }
+    } catch (e) {
+      console.warn("Storage persistence request failed", e);
+    }
+  }
+};
+
 export const getProgress = (): UserProgress => {
-  const stored = localStorage.getItem(KEYS.PROGRESS);
-  return stored ? JSON.parse(stored) : INITIAL_PROGRESS;
+  try {
+    const stored = localStorage.getItem(KEYS.PROGRESS);
+    return stored ? JSON.parse(stored) : INITIAL_PROGRESS;
+  } catch (e) {
+    return INITIAL_PROGRESS;
+  }
 };
 
 export const saveProgress = (progress: UserProgress) => {
@@ -24,18 +42,20 @@ export const saveProgress = (progress: UserProgress) => {
 };
 
 export const getHistory = (): DivinationResult[] => {
-  const stored = localStorage.getItem(KEYS.HISTORY);
-  return stored ? JSON.parse(stored) : [];
+  try {
+    const stored = localStorage.getItem(KEYS.HISTORY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    return [];
+  }
 };
 
 export const saveHistory = (record: DivinationResult) => {
   const history = getHistory();
-  // Add to beginning
   history.unshift(record);
   localStorage.setItem(KEYS.HISTORY, JSON.stringify(history));
 };
 
-// New: Delete a specific history item
 export const deleteHistoryItem = (id: string) => {
   const history = getHistory();
   const newHistory = history.filter(item => item.id !== id);
@@ -43,32 +63,62 @@ export const deleteHistoryItem = (id: string) => {
 };
 
 export const getNote = (cardId: number): string => {
-  const notes = JSON.parse(localStorage.getItem(KEYS.NOTES) || '{}');
-  return notes[cardId] || '';
+  try {
+    const notes = JSON.parse(localStorage.getItem(KEYS.NOTES) || '{}');
+    return notes[cardId] || '';
+  } catch (e) {
+    return '';
+  }
 };
 
 export const saveNote = (cardId: number, content: string) => {
-  const notes = JSON.parse(localStorage.getItem(KEYS.NOTES) || '{}');
-  notes[cardId] = content;
-  localStorage.setItem(KEYS.NOTES, JSON.stringify(notes));
+  try {
+    const notes = JSON.parse(localStorage.getItem(KEYS.NOTES) || '{}');
+    notes[cardId] = content;
+    localStorage.setItem(KEYS.NOTES, JSON.stringify(notes));
+  } catch (e) {
+    console.error("Failed to save note", e);
+  }
 };
 
-// --- Data Export/Import ---
+// --- Quick Sync (Base64) ---
+
+const getAllData = () => ({
+    progress: getProgress(),
+    history: getHistory(),
+    notes: JSON.parse(localStorage.getItem(KEYS.NOTES) || '{}'),
+    timestamp: new Date().toISOString()
+});
+
+const restoreAllData = (data: any) => {
+    if (data.progress) localStorage.setItem(KEYS.PROGRESS, JSON.stringify(data.progress));
+    if (data.history) localStorage.setItem(KEYS.HISTORY, JSON.stringify(data.history));
+    if (data.notes) localStorage.setItem(KEYS.NOTES, JSON.stringify(data.notes));
+};
+
+export const getBackupString = (): string => {
+    const data = getAllData();
+    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+};
+
+export const restoreFromBackupString = (base64Str: string): boolean => {
+    try {
+        const jsonStr = decodeURIComponent(escape(atob(base64Str)));
+        const data = JSON.parse(jsonStr);
+        restoreAllData(data);
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
 
 export const exportData = () => {
-    const data = {
-        progress: getProgress(),
-        history: getHistory(),
-        notes: JSON.parse(localStorage.getItem(KEYS.NOTES) || '{}'),
-        timestamp: new Date().toISOString()
-    };
-    
+    const data = getAllData();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lumina_tarot_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `lumina_tarot_backup.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -81,15 +131,9 @@ export const importData = async (file: File): Promise<boolean> => {
         reader.onload = (e) => {
             try {
                 const content = e.target?.result as string;
-                const data = JSON.parse(content);
-                
-                if (data.progress) localStorage.setItem(KEYS.PROGRESS, JSON.stringify(data.progress));
-                if (data.history) localStorage.setItem(KEYS.HISTORY, JSON.stringify(data.history));
-                if (data.notes) localStorage.setItem(KEYS.NOTES, JSON.stringify(data.notes));
-                
+                restoreAllData(JSON.parse(content));
                 resolve(true);
             } catch (error) {
-                console.error("Import failed:", error);
                 reject(false);
             }
         };

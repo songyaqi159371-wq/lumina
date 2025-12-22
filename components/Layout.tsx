@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Compass, Layers, Home, Menu, X, Feather } from 'lucide-react';
+import { BookOpen, Compass, Layers, Home, Menu, X, Feather, Sparkle } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +13,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/', label: '首页', icon: Home },
     { path: '/learn', label: '图鉴', icon: BookOpen },
+    { path: '/symbols', label: '象征', icon: Sparkle },
     { path: '/practice', label: '练习', icon: Layers },
     { path: '/divination', label: '占卜', icon: Compass },
   ];
@@ -69,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
            <div className="absolute bottom-0 w-full p-4 border-t border-mystic-800">
               <div className="text-xs text-center text-slate-500">
-                  © 2024 Lumina Tarot<br/>Learn & Divinate
+                  © 2024 Lumina Tarot<br/>Symbolic Wisdom
               </div>
            </div>
         </aside>

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { TarotCard, Spread, CaseStudy } from '../types';
 
@@ -7,10 +8,7 @@ export const interpretReading = async (
   cards: { card: TarotCard; isReversed: boolean; positionName: string }[]
 ): Promise<string> => {
   
-  if (!process.env.API_KEY) {
-    return "请配置 API Key 以使用 AI 解读功能。";
-  }
-
+  // Assume process.env.API_KEY is pre-configured and accessible
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const cardDescriptions = cards.map(c => 
@@ -32,7 +30,8 @@ export const interpretReading = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      // Use gemini-3-pro-preview for complex reasoning and interpretation tasks
+      model: 'gemini-3-pro-preview',
       contents: prompt,
     });
     return response.text || "无法生成解读，请稍后再试。";
@@ -43,11 +42,7 @@ export const interpretReading = async (
 };
 
 export const generateAICaseStudy = async (): Promise<CaseStudy | null> => {
-  if (!process.env.API_KEY) {
-    console.warn("No API Key found");
-    return null;
-  }
-
+  // Assume process.env.API_KEY is pre-configured and accessible
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -71,7 +66,8 @@ export const generateAICaseStudy = async (): Promise<CaseStudy | null> => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      // Use gemini-3-pro-preview for complex generation tasks involving specific rules and reasoning
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",

@@ -16,13 +16,27 @@ export interface TarotCard {
   meaningUp: string;
   meaningDown: string;
   description: string;
-  element?: string; // Fire, Water, Air, Earth
+  element?: string;
+  symbols?: string[]; // IDs of symbols found in this card
+}
+
+export interface TarotSymbol {
+  id: string;
+  nameCn: string;
+  nameEn: string;
+  category: 'Nature' | 'Artifact' | 'Divine';
+  generalMeaning: string;
+  details: {
+    cardName: string;
+    interpretation: string;
+  }[];
+  integrationAdvice: string;
 }
 
 export interface UserProgress {
-  learnedCards: number[]; // IDs of cards marked as learned
+  learnedCards: number[];
   dailyDraw: {
-    date: string; // YYYY-MM-DD
+    date: string;
     cardId: number | null;
     isReversed: boolean;
     note: string;
@@ -58,14 +72,6 @@ export interface DivinationResult {
   aiInterpretation?: string;
 }
 
-export interface DailyDrawRecord {
-  date: string;
-  cardId: number;
-  isReversed: boolean;
-  note: string;
-}
-
-// New Interface for Case Studies
 export interface CaseStudy {
   id: string;
   category: 'Love' | 'Career' | 'General' | 'Growth';
