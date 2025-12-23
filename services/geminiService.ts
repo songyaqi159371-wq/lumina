@@ -8,7 +8,7 @@ export const interpretReading = async (
   cards: { card: TarotCard; isReversed: boolean; positionName: string }[]
 ): Promise<string> => {
   
-  // Assume process.env.API_KEY is pre-configured and accessible
+  // Create a new instance right before making an API call as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const cardDescriptions = cards.map(c => 
@@ -30,19 +30,26 @@ export const interpretReading = async (
 
   try {
     const response = await ai.models.generateContent({
-      // Use gemini-3-pro-preview for complex reasoning and interpretation tasks
-      model: 'gemini-3-pro-preview',
+      // Switching to gemini-3-flash-preview for higher availability and stability
+      model: 'gemini-3-flash-preview',
       contents: prompt,
+      config: {
+        thinkingConfig: { thinkingBudget: 4000 }
+      }
     });
     return response.text || "无法生成解读，请稍后再试。";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return "AI 解读服务暂时不可用。";
+    // Handle the specific error if possible
+    if (error.message?.includes("Requested entity was not found")) {
+        // This is a sign we might need to trigger key selection
+        return "API 配置错误。如果您使用的是高级模型，请尝试重新选择 API 密钥。";
+    }
+    return "AI 解读服务暂时不可用，请稍后重试或检查网络连接。";
   }
 };
 
 export const generateAICaseStudy = async (): Promise<CaseStudy | null> => {
-  // Assume process.env.API_KEY is pre-configured and accessible
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -66,8 +73,7 @@ export const generateAICaseStudy = async (): Promise<CaseStudy | null> => {
 
   try {
     const response = await ai.models.generateContent({
-      // Use gemini-3-pro-preview for complex generation tasks involving specific rules and reasoning
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -89,7 +95,6 @@ export const generateAICaseStudy = async (): Promise<CaseStudy | null> => {
 
     if (response.text) {
       const data = JSON.parse(response.text);
-      // Ensure cardId is within valid range to prevent crashes
       if (data.cardId < 0) data.cardId = 0;
       if (data.cardId > 77) data.cardId = 77;
       

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { tarotDeck, caseStudies } from '../constants';
 import CardFlip from '../components/CardFlip';
-import { RefreshCw, CheckCircle, HelpCircle, BookOpen, Lightbulb, Sparkles, ChevronRight } from 'lucide-react';
+import { RefreshCw, BookOpen, Lightbulb, Sparkles, ChevronRight } from 'lucide-react';
 import { TarotCard, CaseStudy } from '../types';
 import { generateAICaseStudy } from '../services/geminiService';
 
@@ -12,10 +11,8 @@ const Practice: React.FC = () => {
   // Flashcard State: 0 = Hidden (Back), 1 = Image (Front), 2 = Meaning (Text)
   const [flashcardStep, setFlashcardStep] = useState<0 | 1 | 2>(0);
   
-  // 1. Order: Flashcard -> Case -> Quiz
-  const [mode, setMode] = useState<'flashcard' | 'case' | 'quiz'>('flashcard');
-  const [options, setOptions] = useState<TarotCard[]>([]);
-  const [quizResult, setQuizResult] = useState<'correct' | 'wrong' | null>(null);
+  // Simplified mode selection: only Flashcard and Case study
+  const [mode, setMode] = useState<'flashcard' | 'case'>('flashcard');
 
   // Case Study State
   const [currentCase, setCurrentCase] = useState<CaseStudy | null>(null);
@@ -25,13 +22,11 @@ const Practice: React.FC = () => {
   // Initialize first card on mount
   useEffect(() => {
     startNewRound();
-    // eslint-disable-next-line
   }, [mode]);
 
   const startNewRound = () => {
     // Reset States
     setFlashcardStep(0);
-    setQuizResult(null);
     setCaseRevealed(false);
 
     if (mode === 'case') {
@@ -42,26 +37,9 @@ const Practice: React.FC = () => {
         return;
     }
 
-    // Default Random Logic for Flashcard/Quiz
+    // Default Random Logic for Flashcard
     const random = tarotDeck[Math.floor(Math.random() * tarotDeck.length)];
     setCurrentCard(random);
-
-    if (mode === 'quiz') {
-        // Generate 3 distractors
-        const distractors: TarotCard[] = [];
-        const usedIds = new Set([random.id]);
-        
-        while(distractors.length < 3) {
-            const r = tarotDeck[Math.floor(Math.random() * tarotDeck.length)];
-            if (!usedIds.has(r.id)) {
-                distractors.push(r);
-                usedIds.add(r.id);
-            }
-        }
-        // Shuffle options
-        const opts = [random, ...distractors].sort(() => Math.random() - 0.5);
-        setOptions(opts);
-    }
   };
 
   const handleGenerateAICase = async () => {
@@ -91,15 +69,6 @@ const Practice: React.FC = () => {
       }
   };
 
-  const handleQuizAnswer = (selectedId: number) => {
-    if (!currentCard) return;
-    if (selectedId === currentCard.id) {
-        setQuizResult('correct');
-    } else {
-        setQuizResult('wrong');
-    }
-  };
-
   if (!currentCard && mode !== 'case') return <div className="p-8 text-center text-slate-400">加载中...</div>;
 
   return (
@@ -118,17 +87,11 @@ const Practice: React.FC = () => {
         >
             <Lightbulb size={16} /> 案例解读
         </button>
-        <button 
-             onClick={() => setMode('quiz')}
-             className={`px-4 py-2 rounded-xl text-sm transition font-medium flex items-center gap-2 ${mode === 'quiz' ? 'bg-mystic-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-        >
-            <HelpCircle size={16} /> 牌义测验
-        </button>
       </div>
 
       <div className="flex flex-col items-center w-full">
         
-        {/* --- 1. FLASHCARD MODE (Side-by-Side Layout) --- */}
+        {/* --- 1. FLASHCARD MODE --- */}
         {mode === 'flashcard' && (
             <div className="w-full flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-12 animate-flip-in">
                  
@@ -158,7 +121,6 @@ const Practice: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* Side Navigation Button (replacing bottom button) */}
                     <button 
                         onClick={startNewRound}
                         className="p-3 md:w-full md:py-3 md:rounded-xl bg-mystic-800 hover:bg-mystic-600 border border-mystic-600 rounded-full text-white shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
@@ -174,9 +136,7 @@ const Practice: React.FC = () => {
                      <div className={`transition-all duration-500 transform w-full h-full ${flashcardStep === 2 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-y-4 md:translate-y-0 md:translate-x-4 pointer-events-none'}`}>
                          {flashcardStep === 2 ? (
                              <div className="bg-mystic-800/80 p-6 md:p-8 rounded-2xl border border-mystic-600 shadow-2xl backdrop-blur-md h-full relative overflow-hidden">
-                                 {/* Decorative bg element */}
                                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-mystic-500/10 rounded-full blur-2xl"></div>
-                                 
                                  <div className="relative z-10">
                                      <div className="flex items-center justify-between mb-6 border-b border-mystic-700 pb-4">
                                          <div>
@@ -232,7 +192,6 @@ const Practice: React.FC = () => {
                                  </div>
                              </div>
                          ) : (
-                             // Placeholder when meaning is hidden
                              <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-mystic-800 rounded-2xl bg-mystic-900/30 text-slate-600">
                                  <BookOpen size={48} className="mb-4 opacity-50" />
                                  <p>思考这张牌的含义...</p>
@@ -247,7 +206,6 @@ const Practice: React.FC = () => {
         {/* --- 2. CASE STUDY MODE --- */}
         {mode === 'case' && currentCase && currentCard && (
              <div className="w-full max-w-4xl animate-flip-in grid md:grid-cols-2 gap-8 items-start">
-                 {/* Left Column: Context & Card */}
                  <div className="flex flex-col items-center">
                      <div className="bg-mystic-800/80 p-6 rounded-2xl border border-mystic-600 w-full mb-6 relative overflow-hidden shadow-lg">
                         <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-mystic-gold to-orange-500"></div>
@@ -270,7 +228,6 @@ const Practice: React.FC = () => {
                             height="h-72"
                             width="w-48"
                         />
-                        {/* Thinking Prompt */}
                         <div className={`mt-6 text-center transition-opacity duration-300 ${caseRevealed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
                              <p className="text-sm text-mystic-300 font-bold mb-2 flex items-center justify-center gap-2">
                                 <span className="animate-bounce">🤔</span> 你的解读是？
@@ -282,7 +239,6 @@ const Practice: React.FC = () => {
                      </div>
                  </div>
 
-                 {/* Right Column: Interpretation (Hidden/Revealed) */}
                  <div className="flex flex-col h-full justify-center">
                      {isGeneratingAI ? (
                          <div className="flex flex-col items-center justify-center h-full min-h-[300px] bg-mystic-900/50 rounded-2xl border border-dashed border-purple-500/30 p-8 text-center animate-pulse">
@@ -338,77 +294,16 @@ const Practice: React.FC = () => {
              </div>
         )}
 
-        {/* --- 3. QUIZ MODE --- */}
-        {mode === 'quiz' && (
-             <div className="w-full max-w-lg animate-flip-in">
-                 <div className="flex justify-center mb-8">
-                    <CardFlip 
-                        key={`quiz-${currentCard!.id}`}
-                        card={currentCard} 
-                        isRevealed={true} 
-                        showLabel={false} // Hide name label to test meaning
-                        height="h-64"
-                        width="w-40"
-                    />
-                 </div>
-                 
-                 <div className="text-center mb-6">
-                     <p className="text-lg text-white font-serif mb-2">这张牌的含义是?</p>
-                     {quizResult === 'correct' && (
-                        <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-xl text-green-300 font-bold flex items-center justify-center gap-2 animate-bounce">
-                            <CheckCircle size={20}/> 回答正确!
-                        </div>
-                     )}
-                     {quizResult === 'wrong' && (
-                        <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 font-bold flex items-center justify-center gap-2 animate-shake">
-                            <HelpCircle size={20}/> 答案不正确，请重试
-                        </div>
-                     )}
-                 </div>
-
-                 <div className="space-y-3">
-                     {options.map(opt => {
-                         const isSelectedCorrect = quizResult === 'correct' && opt.id === currentCard!.id;
-                         return (
-                             <button
-                                key={opt.id}
-                                disabled={quizResult === 'correct'}
-                                onClick={() => handleQuizAnswer(opt.id)}
-                                className={`w-full p-4 rounded-xl border text-left transition-all duration-300 relative overflow-hidden group
-                                    ${isSelectedCorrect
-                                        ? 'bg-green-900/60 border-green-500 text-green-50 shadow-[0_0_15px_rgba(34,197,94,0.3)] transform scale-[1.02] z-10' 
-                                        : 'bg-mystic-800 border-mystic-700 hover:bg-mystic-700 hover:border-mystic-500 text-slate-300 hover:text-white'}
-                                `}
-                             >
-                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className={`font-bold text-sm ${isSelectedCorrect ? 'text-green-300' : 'text-mystic-gold group-hover:text-mystic-300'}`}>
-                                        {opt.keywords.slice(0, 3).join(' / ')} ...
-                                    </span>
-                                    {isSelectedCorrect && <CheckCircle size={16} className="text-green-400 ml-auto"/>}
-                                 </div>
-                                 <p className={`text-xs line-clamp-2 ${isSelectedCorrect ? 'text-green-100' : 'text-slate-500 group-hover:text-slate-400'}`}>
-                                     {opt.meaningUp}
-                                 </p>
-                             </button>
-                         )
-                     })}
-                 </div>
-             </div>
-        )}
-
-        {/* Global Bottom Navigation (Context Aware) */}
+        {/* Global Bottom Navigation */}
         <div className="mt-12 pb-8 flex gap-4">
-            {/* Show 'Next' button at bottom ONLY for Case Study and Quiz. Flashcard uses side button. */}
-            {mode !== 'flashcard' && (
-                <button 
-                    onClick={startNewRound}
-                    disabled={isGeneratingAI}
-                    className="flex items-center gap-2 px-8 py-3 bg-mystic-800 border border-mystic-600 hover:bg-mystic-700 text-white rounded-full transition-all shadow-lg hover:shadow-mystic-500/30 hover:-translate-y-1 font-bold"
-                >
-                    <RefreshCw className={`w-5 h-5 ${quizResult === 'correct' ? 'animate-spin' : ''}`} /> 
-                    {mode === 'case' ? '下一个案例 (本地)' : '下一题'}
-                </button>
-            )}
+            <button 
+                onClick={startNewRound}
+                disabled={isGeneratingAI}
+                className="flex items-center gap-2 px-8 py-3 bg-mystic-800 border border-mystic-600 hover:bg-mystic-700 text-white rounded-full transition-all shadow-lg hover:shadow-mystic-500/30 hover:-translate-y-1 font-bold"
+            >
+                <RefreshCw className={`w-5 h-5`} /> 
+                {mode === 'case' ? '下一个案例' : '下一张'}
+            </button>
             
             {mode === 'case' && (
                  <button 
