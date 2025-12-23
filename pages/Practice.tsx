@@ -1,320 +1,232 @@
-import React, { useState, useEffect } from 'react';
-import { tarotDeck, caseStudies } from '../constants';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { tarotDeck } from '../constants';
 import CardFlip from '../components/CardFlip';
-import { RefreshCw, BookOpen, Lightbulb, Sparkles, ChevronRight } from 'lucide-react';
-import { TarotCard, CaseStudy } from '../types';
-import { generateAICaseStudy } from '../services/geminiService';
+import { RefreshCw, BookOpen, Brain, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
+import { TarotCard } from '../types';
 
 const Practice: React.FC = () => {
+  const [mode, setMode] = useState<'flashcard' | 'keyword'>('flashcard');
   const [currentCard, setCurrentCard] = useState<TarotCard | null>(null);
   
-  // Flashcard State: 0 = Hidden (Back), 1 = Image (Front), 2 = Meaning (Text)
+  // Flashcard State
   const [flashcardStep, setFlashcardStep] = useState<0 | 1 | 2>(0);
   
-  // Simplified mode selection: only Flashcard and Case study
-  const [mode, setMode] = useState<'flashcard' | 'case'>('flashcard');
+  // Keyword Challenge State
+  const [options, setOptions] = useState<string[]>([]);
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Case Study State
-  const [currentCase, setCurrentCase] = useState<CaseStudy | null>(null);
-  const [caseRevealed, setCaseRevealed] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const startNewRound = () => {
+    setFlashcardStep(0);
+    setSelectedAnswers([]);
+    setIsSubmitted(false);
 
-  // Initialize first card on mount
+    const random = tarotDeck[Math.floor(Math.random() * tarotDeck.length)];
+    setCurrentCard(random);
+
+    if (mode === 'keyword') {
+      // Prepare quiz options: 3 correct, 3 wrong
+      const correct = [...random.keywords];
+      const allOtherKeywords = tarotDeck
+        .filter(c => c.id !== random.id)
+        .flatMap(c => c.keywords);
+      
+      const wrong: string[] = [];
+      while (wrong.length < 3) {
+        const rk = allOtherKeywords[Math.floor(Math.random() * allOtherKeywords.length)];
+        if (!correct.includes(rk) && !wrong.includes(rk)) {
+          wrong.push(rk);
+        }
+      }
+      setOptions([...correct, ...wrong].sort(() => Math.random() - 0.5));
+    }
+  };
+
   useEffect(() => {
     startNewRound();
   }, [mode]);
 
-  const startNewRound = () => {
-    // Reset States
-    setFlashcardStep(0);
-    setCaseRevealed(false);
-
-    if (mode === 'case') {
-        const randomCase = caseStudies[Math.floor(Math.random() * caseStudies.length)];
-        setCurrentCase(randomCase);
-        const card = tarotDeck.find(c => c.id === randomCase.cardId) || null;
-        setCurrentCard(card);
-        return;
+  const toggleAnswer = (kw: string) => {
+    if (isSubmitted) return;
+    if (selectedAnswers.includes(kw)) {
+      setSelectedAnswers(selectedAnswers.filter(a => a !== kw));
+    } else if (selectedAnswers.length < 3) {
+      setSelectedAnswers([...selectedAnswers, kw]);
     }
-
-    // Default Random Logic for Flashcard
-    const random = tarotDeck[Math.floor(Math.random() * tarotDeck.length)];
-    setCurrentCard(random);
-  };
-
-  const handleGenerateAICase = async () => {
-      setIsGeneratingAI(true);
-      setCaseRevealed(false);
-      try {
-          const aiCase = await generateAICaseStudy();
-          if (aiCase) {
-              setCurrentCase(aiCase);
-              const card = tarotDeck.find(c => c.id === aiCase.cardId) || null;
-              setCurrentCard(card);
-          } else {
-              alert("AI 生成失败，请稍后重试");
-          }
-      } catch (e) {
-          console.error(e);
-      } finally {
-          setIsGeneratingAI(false);
-      }
   };
 
   const handleFlashcardClick = () => {
-      if (flashcardStep === 0) {
-          setFlashcardStep(1); // Reveal Image
-      } else if (flashcardStep === 1) {
-          setFlashcardStep(2); // Reveal Meaning
-      }
+    if (flashcardStep === 0) setFlashcardStep(1);
+    else if (flashcardStep === 1) setFlashcardStep(2);
   };
 
-  if (!currentCard && mode !== 'case') return <div className="p-8 text-center text-slate-400">加载中...</div>;
+  if (!currentCard) return null;
+
+  const correctCount = selectedAnswers.filter(a => currentCard.keywords.includes(a)).length;
 
   return (
-    <div className="max-w-5xl mx-auto py-6 px-4">
+    <div className="max-w-5xl mx-auto py-4">
       {/* Mode Switcher */}
-      <div className="flex flex-wrap justify-center gap-2 mb-10 bg-mystic-800/50 p-2 rounded-2xl w-fit mx-auto border border-mystic-700 backdrop-blur-sm">
+      <div className="flex justify-center gap-4 mb-12">
         <button 
             onClick={() => setMode('flashcard')}
-            className={`px-4 py-2 rounded-xl text-sm transition font-medium flex items-center gap-2 ${mode === 'flashcard' ? 'bg-mystic-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            className={`px-6 py-3 rounded-2xl text-sm transition-all duration-500 flex items-center gap-3 border ${
+                mode === 'flashcard' 
+                ? 'bg-mystic-gold text-mystic-950 border-mystic-gold shadow-[0_0_20px_rgba(251,191,36,0.3)] font-bold' 
+                : 'text-slate-400 border-white/5 hover:border-white/20 hover:bg-white/5'
+            }`}
         >
-            <BookOpen size={16} /> 闪卡记忆
+            <BookOpen size={18} /> 闪卡记忆
         </button>
         <button 
-             onClick={() => setMode('case')}
-             className={`px-4 py-2 rounded-xl text-sm transition font-medium flex items-center gap-2 ${mode === 'case' ? 'bg-mystic-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+             onClick={() => setMode('keyword')}
+             className={`px-6 py-3 rounded-2xl text-sm transition-all duration-500 flex items-center gap-3 border ${
+                mode === 'keyword' 
+                ? 'bg-mystic-gold text-mystic-950 border-mystic-gold shadow-[0_0_20px_rgba(251,191,36,0.3)] font-bold' 
+                : 'text-slate-400 border-white/5 hover:border-white/20 hover:bg-white/5'
+            }`}
         >
-            <Lightbulb size={16} /> 案例解读
+            <Brain size={18} /> 关键词挑战
         </button>
       </div>
 
-      <div className="flex flex-col items-center w-full">
-        
-        {/* --- 1. FLASHCARD MODE --- */}
-        {mode === 'flashcard' && (
-            <div className="w-full flex flex-col md:flex-row items-center md:items-start justify-center gap-8 md:gap-12 animate-flip-in">
-                 
-                 {/* Left Column: Card & Navigation */}
-                 <div className="flex flex-row md:flex-col items-center gap-4 md:gap-6 flex-shrink-0">
-                    <div className="relative">
-                        <CardFlip 
-                            key={`flash-${currentCard!.id}`} 
-                            card={currentCard} 
-                            isRevealed={flashcardStep > 0} 
-                            showLabel={flashcardStep >= 1} 
-                            onClick={handleFlashcardClick}
-                            height="h-80 md:h-96"
-                            width="w-52 md:w-64"
-                        />
-                        <div className="mt-4 text-center h-6">
-                            {flashcardStep === 0 && (
-                                <span className="text-slate-400 text-xs animate-pulse bg-mystic-900/50 px-3 py-1 rounded-full border border-mystic-700">
-                                    👆 点击翻牌
-                                </span>
-                            )}
-                            {flashcardStep === 1 && (
-                                <span className="text-mystic-gold text-xs animate-pulse bg-mystic-900/50 px-3 py-1 rounded-full border border-mystic-700">
-                                    👆 再次点击看详解
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    
-                    <button 
-                        onClick={startNewRound}
-                        className="p-3 md:w-full md:py-3 md:rounded-xl bg-mystic-800 hover:bg-mystic-600 border border-mystic-600 rounded-full text-white shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
-                        title="下一张"
-                    >
-                        <span className="hidden md:inline font-medium">下一张</span>
-                        <ChevronRight size={24} />
-                    </button>
-                 </div>
-                 
-                 {/* Right Column: Meaning Box */}
-                 <div className="w-full md:max-w-lg flex-1 min-h-[300px]">
-                     <div className={`transition-all duration-500 transform w-full h-full ${flashcardStep === 2 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-y-4 md:translate-y-0 md:translate-x-4 pointer-events-none'}`}>
-                         {flashcardStep === 2 ? (
-                             <div className="bg-mystic-800/80 p-6 md:p-8 rounded-2xl border border-mystic-600 shadow-2xl backdrop-blur-md h-full relative overflow-hidden">
-                                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-mystic-500/10 rounded-full blur-2xl"></div>
-                                 <div className="relative z-10">
-                                     <div className="flex items-center justify-between mb-6 border-b border-mystic-700 pb-4">
-                                         <div>
-                                            <h3 className="text-3xl font-serif text-mystic-gold mb-1">{currentCard!.nameCn}</h3>
-                                            <span className="text-sm text-slate-400 font-serif italic">{currentCard!.nameEn}</span>
-                                         </div>
-                                         <div className="text-center">
-                                            <span className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-600 block mb-1">
-                                                {currentCard!.suit}
-                                            </span>
-                                            <span className="text-xs text-slate-500">
-                                                #{currentCard!.id}
-                                            </span>
-                                         </div>
-                                     </div>
-                                     
-                                     <div className="flex flex-wrap gap-2 mb-8">
-                                        {currentCard!.keywords.map(k => (
-                                            <span key={k} className="text-xs font-bold bg-indigo-900/60 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-indigo-200 shadow-sm">
-                                                {k}
-                                            </span>
-                                        ))}
-                                     </div>
-
-                                     <div className="space-y-6">
-                                        <div className="bg-mystic-900/40 p-4 rounded-xl border border-mystic-700/50">
-                                            <h4 className="text-sm font-bold text-violet-400 mb-2 flex items-center gap-2 uppercase tracking-wide">
-                                                <span className="w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]"></span> 正位含义
-                                            </h4>
-                                            <p className="text-slate-200 leading-relaxed text-sm">
-                                                {currentCard!.meaningUp}
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-mystic-900/40 p-4 rounded-xl border border-mystic-700/50">
-                                            <h4 className="text-sm font-bold text-red-400 mb-2 flex items-center gap-2 uppercase tracking-wide">
-                                                <span className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"></span> 逆位含义
-                                            </h4>
-                                            <p className="text-slate-200 leading-relaxed text-sm">
-                                                {currentCard!.meaningDown}
-                                            </p>
-                                        </div>
-
-                                        <div className="pl-2 border-l-2 border-mystic-700">
-                                            <h4 className="text-xs font-bold text-blue-400 mb-1 uppercase tracking-wide">
-                                                画面描述
-                                            </h4>
-                                            <p className="text-slate-400 leading-relaxed text-xs italic">
-                                                {currentCard!.description}
-                                            </p>
-                                        </div>
-                                     </div>
-                                 </div>
-                             </div>
-                         ) : (
-                             <div className="h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-mystic-800 rounded-2xl bg-mystic-900/30 text-slate-600">
-                                 <BookOpen size={48} className="mb-4 opacity-50" />
-                                 <p>思考这张牌的含义...</p>
-                                 <p className="text-sm mt-2">再次点击卡片查看答案</p>
-                             </div>
-                         )}
-                     </div>
-                 </div>
-            </div>
-        )}
-
-        {/* --- 2. CASE STUDY MODE --- */}
-        {mode === 'case' && currentCase && currentCard && (
-             <div className="w-full max-w-4xl animate-flip-in grid md:grid-cols-2 gap-8 items-start">
-                 <div className="flex flex-col items-center">
-                     <div className="bg-mystic-800/80 p-6 rounded-2xl border border-mystic-600 w-full mb-6 relative overflow-hidden shadow-lg">
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-mystic-gold to-orange-500"></div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-mystic-400 mb-2 block">
-                            情境: {currentCase.category}
-                        </span>
-                        <h3 className="text-xl font-bold text-white mb-3 leading-snug">{currentCase.question}</h3>
-                        <p className="text-slate-300 text-sm italic bg-black/20 p-3 rounded-lg border border-white/5">
-                            “{currentCase.context}”
-                        </p>
-                     </div>
-
-                     <div className="relative">
-                        <CardFlip 
-                            key={`case-${currentCard.id}`}
-                            card={currentCard} 
-                            isRevealed={true} 
-                            isReversed={currentCase.isReversed}
-                            showLabel={true}
-                            height="h-72"
-                            width="w-48"
-                        />
-                        <div className={`mt-6 text-center transition-opacity duration-300 ${caseRevealed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
-                             <p className="text-sm text-mystic-300 font-bold mb-2 flex items-center justify-center gap-2">
-                                <span className="animate-bounce">🤔</span> 你的解读是？
-                             </p>
-                             <p className="text-xs text-slate-400 max-w-[220px] mx-auto bg-mystic-900/50 px-3 py-2 rounded-lg">
-                                 结合这张牌的 <span className={currentCase.isReversed ? 'text-red-400 font-bold' : 'text-green-400 font-bold'}>{currentCase.isReversed ? '逆位' : '正位'}</span> 含义，你会如何回答？
-                             </p>
-                        </div>
-                     </div>
-                 </div>
-
-                 <div className="flex flex-col h-full justify-center">
-                     {isGeneratingAI ? (
-                         <div className="flex flex-col items-center justify-center h-full min-h-[300px] bg-mystic-900/50 rounded-2xl border border-dashed border-purple-500/30 p-8 text-center animate-pulse">
-                             <Sparkles className="w-16 h-16 text-purple-400 mb-6 animate-spin" />
-                             <h4 className="text-lg text-purple-300 font-bold mb-2">正在连接宇宙能量...</h4>
-                             <p className="text-slate-500 text-sm">AI 正在为你生成专属练习案例</p>
-                         </div>
-                     ) : (
-                        !caseRevealed ? (
-                            <div className="flex flex-col items-center justify-center h-full min-h-[300px] bg-mystic-900/50 rounded-2xl border-2 border-dashed border-mystic-700 p-8 text-center gap-6 group hover:border-mystic-500 transition-colors">
-                                <div className="w-20 h-20 bg-mystic-800 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Lightbulb className="w-10 h-10 text-mystic-gold" />
-                                </div>
-                                <div>
-                                    <h4 className="text-white font-bold text-lg mb-1">准备好查看答案了吗？</h4>
-                                    <p className="text-slate-400 text-sm">先在心里构思一下，再看参考解读</p>
-                                </div>
-                                <button 
-                                    onClick={() => setCaseRevealed(true)}
-                                    className="px-8 py-3 bg-mystic-600 hover:bg-mystic-500 text-white rounded-full transition shadow-lg shadow-mystic-600/30 font-bold"
-                                >
-                                    揭晓参考解读
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="bg-gradient-to-br from-mystic-800 to-indigo-900/40 p-6 md:p-8 rounded-2xl border border-mystic-500 shadow-2xl animate-flip-in relative">
-                                <div className="absolute top-4 right-4 text-mystic-700">
-                                    <Lightbulb size={24} />
-                                </div>
-                                <h4 className="text-mystic-gold font-bold text-lg mb-6 border-b border-mystic-700 pb-3">
-                                    参考解读思路
-                                </h4>
-                                <div className="prose prose-invert prose-sm max-w-none">
-                                    <p className="text-slate-200 leading-relaxed text-sm md:text-base mb-6 whitespace-pre-wrap">
-                                        {currentCase.interpretation}
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-black/20 rounded-xl p-4">
-                                    <span className="text-xs text-slate-500 uppercase tracking-wider block mb-3 font-bold">关键点总结</span>
-                                    <div className="flex flex-wrap gap-2">
-                                        {currentCase.keyPoints.map((kp, i) => (
-                                            <span key={i} className="text-xs bg-mystic-700/50 text-mystic-100 px-3 py-1.5 rounded-lg border border-mystic-600">
-                                                {kp}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                     )}
-                 </div>
+      <div className="flex flex-col items-center">
+        {mode === 'flashcard' ? (
+          <div className="w-full flex flex-col lg:flex-row items-start justify-center gap-12 animate-flip-in">
+             <div className="relative group sticky top-4">
+                <CardFlip 
+                    card={currentCard} 
+                    isRevealed={flashcardStep > 0} 
+                    showLabel={flashcardStep >= 1} 
+                    onClick={handleFlashcardClick}
+                    width="w-64"
+                    height="h-[26rem]"
+                />
+                <div className="mt-6 text-center">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-mystic-gold/50 animate-pulse">
+                        {flashcardStep === 0 ? "点击翻开牌面" : flashcardStep === 1 ? "再次点击查看释义" : "已揭示"}
+                    </p>
+                </div>
              </div>
+
+             <div className="flex-1 w-full max-w-lg">
+                <div className={`transition-all duration-700 transform ${flashcardStep === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+                   <div className="glass-card p-10 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-8 opacity-5"><Sparkles size={60}/></div>
+                      <h3 className="text-3xl font-serif text-white mb-2">{currentCard.nameCn}</h3>
+                      <p className="text-mystic-gold font-serif text-xs tracking-widest uppercase mb-8">{currentCard.nameEn}</p>
+                      
+                      <div className="space-y-8">
+                        <div>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-widest block mb-3 font-bold">核心关键词</span>
+                            <div className="flex flex-wrap gap-2">
+                                {currentCard.keywords.map(k => (
+                                    <span key={k} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-300">{k}</span>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="p-4 bg-white/[0.02] rounded-2xl border border-white/5">
+                                <span className="text-[10px] text-indigo-400 uppercase tracking-widest block mb-1 font-bold">正位</span>
+                                <p className="text-sm text-slate-300 leading-relaxed">{currentCard.meaningUp}</p>
+                            </div>
+                            <div className="p-4 bg-white/[0.02] rounded-2xl border border-white/5">
+                                <span className="text-[10px] text-red-400 uppercase tracking-widest block mb-1 font-bold">逆位</span>
+                                <p className="text-sm text-slate-300 leading-relaxed">{currentCard.meaningDown}</p>
+                            </div>
+                        </div>
+
+                        {/* 新增画面象征部分 */}
+                        <div className="pt-4 border-t border-white/5">
+                            <span className="text-[10px] text-blue-400 uppercase tracking-widest block mb-3 font-bold">画面象征</span>
+                            <p className="text-sm text-slate-400 leading-relaxed italic">{currentCard.description}</p>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </div>
+        ) : (
+          <div className="w-full max-w-4xl animate-flip-in">
+             <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div className="flex flex-col items-center">
+                    <div className="mb-8 text-center">
+                        <h3 className="text-xl font-serif text-white mb-2 tracking-widest">请选择 3 个正确的关键词</h3>
+                        <p className="text-slate-500 text-xs">考察你对该牌核心象征意义的掌握程度</p>
+                    </div>
+                    <CardFlip card={currentCard} isRevealed={true} showLabel={isSubmitted} width="w-56" height="h-[22rem]" />
+                </div>
+
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        {options.map((kw) => {
+                            const isSelected = selectedAnswers.includes(kw);
+                            const isCorrect = currentCard.keywords.includes(kw);
+                            let style = "border-white/10 text-slate-400 bg-white/5";
+                            
+                            if (isSubmitted) {
+                                if (isCorrect) style = "border-emerald-500/50 text-emerald-400 bg-emerald-500/10";
+                                else if (isSelected && !isCorrect) style = "border-red-500/50 text-red-400 bg-red-500/10";
+                                else style = "border-white/5 text-slate-600 bg-transparent opacity-50";
+                            } else if (isSelected) {
+                                style = "border-mystic-gold text-mystic-gold bg-mystic-gold/10";
+                            }
+
+                            return (
+                                <button
+                                    key={kw}
+                                    onClick={() => toggleAnswer(kw)}
+                                    disabled={isSubmitted}
+                                    className={`p-5 rounded-2xl border transition-all duration-300 text-sm font-medium ${style} ${!isSubmitted && 'hover:border-white/30 hover:scale-[1.02] active:scale-95'}`}
+                                >
+                                    <div className="flex justify-between items-center">
+                                        {kw}
+                                        {isSubmitted && isCorrect && <CheckCircle2 size={16} />}
+                                        {isSubmitted && isSelected && !isCorrect && <XCircle size={16} />}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {!isSubmitted ? (
+                        <button
+                            disabled={selectedAnswers.length < 3}
+                            onClick={() => setIsSubmitted(true)}
+                            className="w-full py-4 bg-white text-mystic-950 rounded-2xl font-bold tracking-widest uppercase text-xs disabled:opacity-20 transition-all hover:bg-mystic-gold active:scale-95"
+                        >
+                            提交答案
+                        </button>
+                    ) : (
+                        <div className="glass-card p-6 rounded-2xl border border-white/5 animate-flip-in text-center">
+                            <h4 className="text-2xl font-serif text-white mb-2">
+                                {correctCount === 3 ? "完美！能量共鸣" : correctCount >= 1 ? "有所斩获" : "仍需修行"}
+                            </h4>
+                            <p className="text-slate-400 text-xs mb-4">你答对了 {correctCount} / 3 个关键词</p>
+                            <button 
+                                onClick={startNewRound}
+                                className="px-8 py-2 bg-mystic-gold/10 text-mystic-gold border border-mystic-gold/20 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-mystic-gold hover:text-mystic-950 transition-all"
+                            >
+                                下一关
+                            </button>
+                        </div>
+                    )}
+                </div>
+             </div>
+          </div>
         )}
 
-        {/* Global Bottom Navigation */}
-        <div className="mt-12 pb-8 flex gap-4">
-            <button 
+        {/* Refresh Action */}
+        <div className="mt-16 flex gap-4">
+             <button 
                 onClick={startNewRound}
-                disabled={isGeneratingAI}
-                className="flex items-center gap-2 px-8 py-3 bg-mystic-800 border border-mystic-600 hover:bg-mystic-700 text-white rounded-full transition-all shadow-lg hover:shadow-mystic-500/30 hover:-translate-y-1 font-bold"
+                className="flex items-center gap-3 px-8 py-3 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-full transition-all hover:-translate-y-1 font-bold tracking-widest text-[10px] uppercase"
             >
-                <RefreshCw className={`w-5 h-5`} /> 
-                {mode === 'case' ? '下一个案例' : '下一张'}
+                <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700" /> 
+                切换卡牌
             </button>
-            
-            {mode === 'case' && (
-                 <button 
-                    onClick={handleGenerateAICase}
-                    disabled={isGeneratingAI}
-                    className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-full transition-all shadow-lg hover:shadow-purple-500/30 hover:-translate-y-1 font-bold"
-                >
-                    <Sparkles className={`w-5 h-5 ${isGeneratingAI ? 'animate-spin' : ''}`} /> 
-                    AI 生成新案例
-                </button>
-            )}
         </div>
       </div>
     </div>

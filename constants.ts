@@ -1,3 +1,4 @@
+
 import { Suit, TarotCard, TarotSymbol, Spread, CaseStudy } from './types';
 
 export const tarotDeck: TarotCard[] = [
@@ -11,6 +12,7 @@ export const tarotDeck: TarotCard[] = [
   { id: 6, nameCn: "恋人", nameEn: "The Lovers", number: 6, suit: Suit.Major, keywords: ["选择", "和谐", "关系"], meaningUp: "爱、价值观的统一、重要决策。", meaningDown: "失调、逃避责任、不合时宜的选择。", description: "背景中的巨大太阳是统合的天使，它身后的山脉象征着灵性提升后的顶峰视角。天使拉斐尔的双翼是羽毛的极致，提供神圣保护。在这里，山峰代表了二元对立在‘合一’中得到的最终治愈，即‘回家’的体验。", element: "Air" },
   { id: 7, nameCn: "战车", nameEn: "The Chariot", number: 7, suit: Suit.Major, keywords: ["胜利", "意志", "自律"], meaningUp: "克服障碍、坚定的目标、控制对立面。", meaningDown: "失控、缺乏动力、咄咄逼人。", description: "车轮上方的双翼太阳圆盘是荷鲁斯的猎鹰之翼，象征着理智能够盘旋在深渊之上。他的盔甲是仪式性的，胸前的方块象征理性的规则。背后坚固的城堡墙壁表明，他的力量源泉来自于稳固的世俗权力支撑。", element: "Water" },
   { id: 8, nameCn: "力量", nameEn: "Strength", number: 8, suit: Suit.Major, keywords: ["勇气", "耐力", "柔性"], meaningUp: "内在力量、慈悲、驯服本能。", meaningDown: "软弱、自我怀疑、原始冲动。", description: "女性头顶的无限大符号与背景中温和的金色天空呼应。她身处平缓的旷野，背景远方的高山（Mountains）暗示着虽然此刻是柔性的互动，但其内在蕴含着能跨越最高挑战的刚毅。这是一种将狮子的原始本能转化为灵性耐力的过程。", element: "Fire" },
+  { id: 9, nameCn: "隐者", nameEn: "The Hermit", number: 9, suit: Suit.Major, keywords: ["内省", "孤独", "指引", "寻求真理"], meaningUp: "代表寻求内在智慧，反思和孤独。", meaningDown: "隔离、孤独过度、退缩、偏执。", description: "他站在冰封的高山（Mountains）顶端，象征着灵魂已到达世俗意识的极限。他手提的提灯中，闪烁着代表理智与真理的六角星（Solomon's Seal），这是他在绝对孤独中磨练出的‘灯火’。他的长杖是‘火元素’的延伸，代表他在黑暗中通过意志力支撑前行。灰色斗篷代表了将内在光亮包裹其中的谦卑。", element: "Earth" },
   { id: 10, nameCn: "命运之轮", nameEn: "Wheel of Fortune", number: 10, suit: Suit.Major, keywords: ["周期", "命运", "转机"], meaningUp: "好运、不可控的改变、因果报应。", meaningDown: "厄运、阻力、拒绝接受改变。", description: "轮盘四周漂浮在云朵中的生物拥有羽毛翅膀，代表通过精神智慧超越物质循环。云朵划定了普通生活与神圣秩序的分界。中间的轮盘象征时间如圆环般转动，象征进入真实光亮之前的过渡。", element: "Fire" },
   { id: 11, nameCn: "正义", nameEn: "Justice", number: 11, suit: Suit.Major, keywords: ["公平", "真理", "法律"], meaningUp: "正义、客观、责任感。", meaningDown: "不公、推卸责任、法律问题。", description: "她端坐在平滑的石柱之间，意味着法律的答案不容分心。她头上的金色王冠中心有一颗小方块，代表‘理性的规则’。她手中的天平是十字架的一种变体，代表着对立面互动后的绝对平衡点。", element: "Air" },
   { id: 12, nameCn: "吊人", nameEn: "The Hanged Man", number: 12, suit: Suit.Major, keywords: ["牺牲", "暂停", "新视角"], meaningUp: "放手、牺牲、等待。", meaningDown: "优柔寡断、停滞。", description: "他悬挂在‘Tau型十字架’上。这是一种具有‘反转’特质的象征，代表通过彻底的视角转换来实现救赎。他头部的光晕是内在视觉苏醒的标志，这种‘特殊的黑暗’是进入启蒙之前的滤网。", element: "Water" },
@@ -38,7 +40,7 @@ export const tarotDeck: TarotCard[] = [
   { id: 32, nameCn: "权杖侍从", nameEn: "Page of Wands", number: 11, suit: Suit.Wands, keywords: ["热情", "探索", "消息"], meaningUp: "探索精神。", meaningDown: "幼稚冲动。", description: "他在沙漠中注视着发芽的权杖。他帽上那根鲜红的羽毛是‘火元素’最直接的显现，代表着灵魂最初始的、渴望向上飞翔的灵感。背景的高山预示着即将开启的冒险。", element: "Fire" },
   { id: 33, nameCn: "权杖骑士", nameEn: "Knight of Wands", number: 12, suit: Suit.Wands, keywords: ["冲动", "激情", "行动"], meaningUp: "勇往直前。", meaningDown: "鲁莽傲慢。", description: "红色的马是一匹‘太阳之马’，火热且极速。骑士穿着绘有火蜥蜴图案的盔甲（Armor），代表他完全臣服于火元素的原始动力。他头盔上的红色羽毛如同火焰本身。", element: "Fire" },
   { id: 34, nameCn: "权杖皇后", nameEn: "Queen of Wands", number: 13, suit: Suit.Wands, keywords: ["自信", "热情", "慷慨"], meaningUp: "成熟且自信。", meaningDown: "暴躁好胜。", description: "她坐在绘有狮子图案的王座上。王冠下的黑猫是她野性本能的温驯化。她身后的挂毯中隐含着花园的意象，代表她已在荒原中培育出了秩序。手中的向日葵是与太阳能量连接的标记。", element: "Fire" },
-  { id: 35, nameCn: "权杖国王", nameEn: "King of Wands", number: 14, suit: Suit.Wands, keywords: ["远见", "权力", "领导力"], meaningUp: "极具远见。", meaningDown: "独裁自负。", description: "国王穿着完全武装的盔甲（Armor），坐在石座上，表明他的权力基于‘已实现的防御’。头上的王冠顶部像火焰一样跳动，象征他是火元素圣殿的终极主宰。", element: "Fire" },
+  { id: 35, nameCn: "权杖国王", nameEn: "King of Wands", number: 14, suit: Suit.Wands, keywords: ["远见", "权力", "领导力"], meaningUp: "极具远见。", meaningDown: "独裁自负。", description: "国王穿着完全武装的盔甲（Armor），坐在石座上，表明 his 权力基于‘已实现的防御’。头上的王冠顶部像火焰一样跳动，象征他是火元素圣殿的终极主宰。", element: "Fire" },
 
   // Cups (36-49)
   { id: 36, nameCn: "圣杯首牌", nameEn: "Ace of Cups", number: 1, suit: Suit.Cups, keywords: ["爱", "新感情", "直觉"], meaningUp: "情感的爆发。", meaningDown: "情感枯竭。", description: "云中伸出的手托着圣杯，象征着‘水之河流’的原始喷涌。下方的水池（Pools）中长满了莲花，意味着在沉静的潜意识深处，神圣的爱已经开始显化其完美的生命形态。", element: "Water" },

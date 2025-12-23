@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-    Star, Activity, Sparkle, BookOpen, ChevronRight, 
-    Eye, Lightbulb, Compass, Award, ScrollText, PlayCircle 
+    Star, Sparkle, BookOpen, 
+    Eye, ScrollText, PlayCircle, 
+    Moon, Sun, Compass, Zap,
+    Trophy, Flame
 } from 'lucide-react';
 import { getProgress, saveProgress } from '../services/storage';
 import { tarotDeck } from '../constants';
@@ -44,83 +46,156 @@ const Home: React.FC = () => {
   const dailyCard = progress.dailyDraw.cardId !== null 
     ? tarotDeck.find(c => c.id === progress.dailyDraw.cardId) 
     : null;
-  const percent = Math.round((progress.learnedCards.length / tarotDeck.length) * 100);
 
   return (
-    <div className="space-y-12 animate-flip-in pb-20">
-      {/* Hero Header */}
-      <header className="relative py-8">
-        <div className="absolute -top-10 -left-10 w-64 h-64 bg-mystic-600/10 blur-[100px] rounded-full pointer-events-none"></div>
-        <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-                <Compass className="text-mystic-gold w-5 h-5 animate-spin-slow" />
-                <span className="text-xs font-serif text-mystic-400 tracking-[0.4em] uppercase">The Inner Temple</span>
+    <div className="relative space-y-32 animate-flip-in pb-32">
+      {/* --- BACKGROUND MYSTIC ELEMENTS --- */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[800px] pointer-events-none -z-10">
+          <div className="absolute top-[10%] left-[20%] w-[400px] h-[400px] bg-mystic-500/10 blur-[120px] rounded-full animate-pulse-slow"></div>
+          <div className="absolute top-[30%] right-[20%] w-[500px] h-[500px] bg-mystic-700/10 blur-[150px] rounded-full animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/sacred-geometry.png')] opacity-5"></div>
+      </div>
+
+      {/* --- HERO SECTION --- */}
+      <header className="relative pt-20 text-center flex flex-col items-center">
+        <div className="relative z-10 max-w-5xl px-4">
+            <div className="flex items-center justify-center gap-4 mb-10 opacity-60">
+                <div className="h-px w-24 bg-gradient-to-r from-transparent to-mystic-gold"></div>
+                <Sun size={20} className="text-mystic-gold animate-spin-slow" />
+                <div className="h-px w-24 bg-gradient-to-l from-transparent to-mystic-gold"></div>
             </div>
-            <h1 className="text-4xl lg:text-6xl font-serif text-white mb-4 leading-tight">
-                欢迎开启 <span className="shimmer-text">Lumina</span><br/>
-                <span className="text-mystic-gold opacity-90">智慧探索之旅</span>
+            
+            <h1 className="text-7xl lg:text-[10rem] font-serif text-white mb-6 leading-none tracking-tighter">
+                <span className="opacity-30 block text-3xl lg:text-4xl tracking-[0.8em] mb-6 font-light">ARCHIVE OF</span>
+                <span className="shimmer-text block uppercase font-bold drop-shadow-[0_0_30px_rgba(251,191,36,0.2)]">Lumina</span>
             </h1>
-            <p className="text-slate-400 max-w-xl text-lg font-light leading-relaxed">
-                在 78 张牌的象征世界中，追寻理性的深度与灵性的直觉。每一张牌都是开启潜意识之门的钥匙。
+            
+            <p className="text-slate-400 max-w-3xl mx-auto text-xl lg:text-2xl font-light leading-relaxed tracking-widest opacity-70 mb-16">
+                开启阿卡纳的封印，在象征的迷宫中聆听来自宇宙的低语。
             </p>
+
+            {/* --- CRYSTAL BALL ELEMENT --- */}
+            <div className="relative flex justify-center mb-10">
+                <div className="w-56 h-56 relative group">
+                    {/* Glowing Orbs */}
+                    <div className="absolute inset-0 bg-mystic-gold/20 rounded-full blur-[60px] group-hover:bg-mystic-gold/40 transition-all duration-1000 animate-pulse"></div>
+                    <div className="absolute -inset-4 border border-mystic-gold/10 rounded-full animate-spin-slow"></div>
+                    <div className="absolute -inset-8 border border-white/5 rounded-full animate-reverse-spin-slow"></div>
+                    
+                    {/* The Ball */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-mystic-950 via-mystic-800 to-mystic-700 border border-white/10 shadow-inner overflow-hidden flex items-center justify-center">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)]"></div>
+                        <div className="relative">
+                            <Sparkle size={48} className="text-mystic-gold animate-pulse drop-shadow-[0_0_15px_#fbbf24]" />
+                            <div className="absolute inset-0 blur-xl bg-mystic-gold/30 rounded-full"></div>
+                        </div>
+                        {/* Swirling Mists */}
+                        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/dust.png')] animate-pulse"></div>
+                    </div>
+                    
+                    {/* Base */}
+                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-6 bg-mystic-900 border-t border-mystic-gold/30 rounded-t-full shadow-2xl"></div>
+                </div>
+            </div>
         </div>
       </header>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Daily Insight Section (Main Center) */}
-        <div className="lg:col-span-8 group">
-            <div className="h-full glass-card p-8 md:p-12 rounded-[2.5rem] relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(109,40,217,0.15)]">
-                <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity">
-                    <Star className="w-64 h-64 rotate-12" />
-                </div>
-                
-                <div className="flex flex-col md:flex-row gap-12 items-center">
-                    <div className="relative flex-shrink-0">
-                        <div className="absolute -inset-4 bg-mystic-gold/10 rounded-full blur-2xl animate-pulse-slow"></div>
-                        <CardFlip 
-                            card={dailyCard || null} 
-                            isReversed={progress.dailyDraw.isReversed} 
-                            isRevealed={isRevealed} 
-                            onClick={handleDailyDraw}
-                            width="w-56 md:w-64"
-                            height="h-80 md:h-96"
-                        />
+      {/* --- DAILY RITUAL (The Ritual Aspect) --- */}
+      <section className="relative px-4">
+        <div className="max-w-6xl mx-auto">
+            <div className="glass-card rounded-[4rem] overflow-hidden border-white/5 shadow-[0_0_120px_rgba(0,0,0,0.6)] group/section">
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                    {/* Card Presentation */}
+                    <div className="bg-black/40 p-16 lg:p-28 flex items-center justify-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.05),transparent)]"></div>
+                        
+                        <div className="relative z-10 animate-float">
+                            <div className={`absolute -inset-24 rounded-full blur-[120px] transition-all duration-1000 ${isRevealed ? 'bg-mystic-gold/20' : 'bg-mystic-600/10'}`}></div>
+                            
+                            <CardFlip 
+                                card={dailyCard || null} 
+                                isReversed={progress.dailyDraw.isReversed} 
+                                isRevealed={isRevealed} 
+                                onClick={handleDailyDraw}
+                                width="w-64 md:w-80"
+                                height="h-[36rem]"
+                            />
+
+                            {!isRevealed && (
+                                <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-full text-center">
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-mystic-gold animate-ping"></div>
+                                        <p className="text-xs text-mystic-gold font-serif tracking-[0.4em] uppercase">Pending Intent</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="flex-1 space-y-6 text-center md:text-left">
-                        <div className="space-y-2">
-                            <h2 className="text-xs font-serif text-mystic-gold tracking-[0.3em] uppercase">Insight of the Day</h2>
-                            <h3 className="text-4xl font-serif text-white tracking-wide">每日启示</h3>
+                    {/* Ritual Meaning */}
+                    <div className="p-16 lg:p-24 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-white/5 bg-mystic-900/20 backdrop-blur-sm">
+                        <div className="absolute top-0 right-0 p-16 opacity-[0.02] pointer-events-none">
+                            <Compass size={400} className="rotate-12 animate-spin-slow" />
                         </div>
 
                         {!isRevealed ? (
-                            <div className="space-y-6">
-                                <p className="text-slate-400 font-light text-lg">点击左侧卡片，接收今日专属的共时性讯息。</p>
+                            <div className="space-y-12 animate-flip-in">
+                                <div className="space-y-4">
+                                    <span className="text-xs text-mystic-gold uppercase tracking-[0.6em] block opacity-50 font-serif">Daily Communion</span>
+                                    <h3 className="text-6xl font-serif text-white tracking-widest leading-tight italic">今日契约</h3>
+                                </div>
+                                <p className="text-slate-400 text-xl font-light leading-loose italic pl-8 border-l-2 border-mystic-gold/20">
+                                    “放下杂念。这不只是抽牌，而是你与潜意识的一次共振。今天，宇宙想通过象征向你传达什么？”
+                                </p>
                                 <button 
                                     onClick={handleDailyDraw}
-                                    className="px-8 py-3 bg-mystic-600 hover:bg-mystic-500 text-white rounded-2xl transition-all shadow-lg shadow-mystic-900/50 font-bold active:scale-95 flex items-center gap-3 mx-auto md:mx-0"
+                                    className="group relative px-16 py-6 bg-gradient-to-tr from-mystic-gold to-yellow-600 text-mystic-950 rounded-2xl transition-all font-bold active:scale-95 flex items-center justify-center gap-4 shadow-2xl shadow-mystic-gold/20 hover:shadow-mystic-gold/40"
                                 >
-                                    <PlayCircle size={20}/> 开启神圣链接
+                                    <Flame size={20} className="animate-pulse" />
+                                    <span className="tracking-[0.3em] uppercase text-sm">唤醒感应</span>
                                 </button>
                             </div>
                         ) : dailyCard && (
-                            <div className="space-y-4 animate-flip-in">
-                                <div className="inline-flex items-center gap-3 px-4 py-1 bg-mystic-900/50 border border-mystic-700/50 rounded-full">
-                                    <span className="w-2 h-2 rounded-full bg-mystic-gold"></span>
-                                    <p className="text-mystic-gold font-serif text-sm tracking-widest">{dailyCard.nameEn}</p>
+                            <div className="space-y-12 animate-flip-in">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 text-mystic-gold mb-2">
+                                        <Sparkle size={14} className="animate-spin-slow" />
+                                        <span className="text-xs font-serif uppercase tracking-[0.4em] opacity-60">The Revelation</span>
+                                    </div>
+                                    <h4 className="text-7xl font-serif text-white tracking-tighter uppercase">
+                                        {dailyCard.nameCn}
+                                        {progress.dailyDraw.isReversed && (
+                                            <span className="ml-4 text-red-500/60 text-3xl font-sans font-light">(Reversed)</span>
+                                        )}
+                                    </h4>
+                                    <p className="text-mystic-gold/50 font-serif text-sm tracking-[0.3em] uppercase">{dailyCard.nameEn}</p>
                                 </div>
-                                <h4 className="text-3xl font-bold text-white">{dailyCard.nameCn} {progress.dailyDraw.isReversed && <span className="text-red-400 text-lg">(逆位)</span>}</h4>
-                                <p className="text-slate-300 leading-relaxed font-light text-base bg-mystic-900/40 p-5 rounded-2xl border border-mystic-800">
-                                    {progress.dailyDraw.isReversed ? dailyCard.meaningDown : dailyCard.meaningUp}
-                                </p>
-                                <div className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
-                                    <Link to={`/learn?id=${dailyCard.id}`} className="flex items-center gap-2 text-mystic-gold hover:text-white transition group text-sm font-bold">
-                                        深入研读图鉴 <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform"/>
+
+                                <div className="relative">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-mystic-gold to-transparent opacity-30"></div>
+                                    <p className="text-slate-200 leading-relaxed font-light text-2xl italic pl-8">
+                                        {progress.dailyDraw.isReversed ? dailyCard.meaningDown : dailyCard.meaningUp}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-10 pt-10">
+                                    <Link to={`/learn?id=${dailyCard.id}`} className="group flex items-center gap-5">
+                                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10 group-hover:border-mystic-gold/40 transition-all shadow-xl">
+                                            <BookOpen size={20} className="text-mystic-gold" />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Wisdom</span>
+                                            <span className="block text-sm text-white group-hover:text-mystic-gold transition-colors font-serif">深入图鉴</span>
+                                        </div>
                                     </Link>
-                                    <Link to="/divine" className="flex items-center gap-2 text-indigo-400 hover:text-white transition group text-sm font-bold">
-                                        以此进行占卜 <Eye size={16} className="group-hover:scale-110 transition-transform"/>
+                                    <Link to="/divine" className="group flex items-center gap-5">
+                                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10 group-hover:border-indigo-400/40 transition-all shadow-xl">
+                                            <Eye size={20} className="text-indigo-400" />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="block text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Ritual</span>
+                                            <span className="block text-sm text-white group-hover:text-indigo-400 transition-colors font-serif">开启全阵</span>
+                                        </div>
                                     </Link>
                                 </div>
                             </div>
@@ -129,90 +204,55 @@ const Home: React.FC = () => {
                 </div>
             </div>
         </div>
-
-        {/* Action Sidebar Area */}
-        <div className="lg:col-span-4 space-y-8">
-            {/* Quick Stats */}
-            <div className="glass-card p-6 rounded-[2rem] border border-mystic-800 shadow-xl">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-widest">
-                        <Award className="w-4 h-4 text-mystic-gold" /> 修行进度
-                    </h2>
-                    <span className="text-[10px] text-slate-500 font-serif">78 Cards Total</span>
-                </div>
-                
-                <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                        <span className="text-2xl font-serif text-mystic-gold font-bold">{progress.learnedCards.length}</span>
-                        <span className="text-[10px] text-slate-500 mb-1">已激活牌灵</span>
-                    </div>
-                    <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                            className="bg-gradient-to-r from-mystic-700 to-mystic-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(139,92,246,0.5)]" 
-                            style={{ width: `${percent}%` }}
-                        ></div>
-                    </div>
-                    <div className="flex justify-between text-[10px] text-slate-500 italic">
-                        <span>新手路标</span>
-                        <span>{percent}% 完成度</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Divination Entry (Special Design) */}
-            <Link to="/divine" className="block relative group overflow-hidden rounded-[2rem] shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-mystic-950 transition-all duration-500 group-hover:scale-110"></div>
-                <div className="absolute inset-0 border-2 border-mystic-gold/20 group-hover:border-mystic-gold/50 rounded-[2rem] transition-colors"></div>
-                
-                <div className="relative p-8 flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center border border-mystic-gold/30 shadow-inner group-hover:shadow-[0_0_20px_rgba(251,191,36,0.2)] transition-all">
-                        <Eye className="text-mystic-gold w-8 h-8 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-serif text-white font-bold tracking-widest mb-2 group-hover:text-mystic-gold transition-colors">占卜</h3>
-                        <p className="text-slate-400 text-xs font-light leading-relaxed">
-                            针对你的现状提供深度象征学解析。
-                        </p>
-                    </div>
-                    <div className="px-6 py-2 bg-mystic-gold text-mystic-950 rounded-full text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all">
-                        Enter Sanctum
-                    </div>
-                </div>
-            </Link>
-        </div>
-      </div>
-
-      {/* Feature Navigation Grid */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <FeatureCard 
-            to="/learn" 
-            icon={<BookOpen size={24}/>} 
-            title="图鉴" 
-            desc="78 张牌全解析" 
-            color="text-blue-400"
-          />
-          <FeatureCard 
-            to="/symbols" 
-            icon={<Sparkle size={24}/>} 
-            title="象征" 
-            desc="秘密视觉语法" 
-            color="text-mystic-gold"
-          />
-          <FeatureCard 
-            to="/practice" 
-            icon={<Lightbulb size={24}/>} 
-            title="练习" 
-            desc="案例解读" 
-            color="text-emerald-400"
-          />
-          <FeatureCard 
-            to="/divine" 
-            icon={<ScrollText size={24}/>} 
-            title="占卜" 
-            desc="14 种神圣布局" 
-            color="text-indigo-400"
-          />
       </section>
+
+      {/* --- FEATURE NAVIGATION --- */}
+      <section className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10">
+              <FeatureCard 
+                to="/learn" 
+                icon={<BookOpen size={36}/>} 
+                title="图鉴" 
+                desc="神秘学字典" 
+                id="01"
+              />
+              <FeatureCard 
+                to="/symbols" 
+                icon={<Sun size={36}/>} 
+                title="象征" 
+                desc="视觉语法百科" 
+                id="02"
+              />
+              <FeatureCard 
+                to="/practice" 
+                icon={<Zap size={36}/>} 
+                title="练习" 
+                desc="灵能觉醒任务" 
+                id="03"
+              />
+              <FeatureCard 
+                to="/divine" 
+                icon={<ScrollText size={36}/>} 
+                title="占卜" 
+                desc="神圣几何排阵" 
+                id="04"
+              />
+          </div>
+      </section>
+
+      {/* --- DECORATIVE FOOTER --- */}
+      <footer className="max-w-4xl mx-auto text-center py-20 opacity-30">
+          <div className="flex items-center justify-center gap-12 mb-10">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+              <div className="flex gap-6 text-white">
+                  <Moon size={18} />
+                  <div className="w-2 h-2 rounded-full bg-mystic-gold animate-pulse"></div>
+                  <Sun size={18} />
+              </div>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent via-white/40 to-transparent"></div>
+          </div>
+          <p className="text-xs font-serif uppercase tracking-[1em] font-light">The Arcana is the Mirror of the Infinite</p>
+      </footer>
     </div>
   );
 };
@@ -222,14 +262,31 @@ interface FeatureCardProps {
     icon: React.ReactNode;
     title: string;
     desc: string;
-    color: string;
+    id: string;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ to, icon, title, desc, color }) => (
-    <Link to={to} className="glass-card p-6 rounded-3xl border border-mystic-800 hover:border-mystic-700/50 transition-all hover:-translate-y-1 group">
-        <div className={`${color} mb-4 transition-transform group-hover:scale-110 duration-500`}>{icon}</div>
-        <h3 className="text-white font-serif font-bold text-sm mb-1 group-hover:text-mystic-gold transition-colors">{title}</h3>
-        <p className="text-[10px] text-slate-500">{desc}</p>
+const FeatureCard: React.FC<FeatureCardProps> = ({ to, icon, title, desc, id }) => (
+    <Link to={to} className="relative group">
+        <div className="glass-card p-12 rounded-[3.5rem] border-white/5 transition-all duration-700 group-hover:bg-mystic-800/40 group-hover:-translate-y-4 flex flex-col items-center text-center gap-8 overflow-hidden">
+            {/* Background Id Decor */}
+            <span className="absolute top-6 right-10 text-5xl font-serif font-bold text-white/[0.03] group-hover:text-mystic-gold/10 transition-colors pointer-events-none">{id}</span>
+            
+            <div className="text-mystic-gold/40 group-hover:text-mystic-gold transition-all duration-700 transform group-hover:scale-125 group-hover:rotate-6">
+                {icon}
+            </div>
+            
+            <div className="space-y-2">
+                <h3 className="text-2xl font-serif font-bold text-white group-hover:text-mystic-gold transition-colors duration-500 tracking-widest">
+                    {title}
+                </h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-light italic">
+                    {desc}
+                </p>
+            </div>
+
+            {/* Glowing underline hover effect */}
+            <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-mystic-gold/50 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-center"></div>
+        </div>
     </Link>
 );
 
