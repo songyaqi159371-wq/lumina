@@ -1,18 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { spreads, tarotDeck, getCardImageUrl } from '../constants';
 import { Spread, TarotCard } from '../types';
 import CardFlip from '../components/CardFlip';
 import { interpretReading } from '../services/geminiService';
 import { 
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight, 
-    HelpCircle, Eye, X, BookOpen, Key, 
-    CheckCircle, Info, MousePointer2
+    HelpCircle, Eye, X, BookOpen, 
+    Info, ShieldAlert,
+    Compass, Zap, Globe,
+    ChevronDown, Ban,
+    ShieldCheck, MapPin, UserCheck
 } from 'lucide-react';
 
 const Divination: React.FC = () => {
   const [step, setStep] = useState<'select' | 'input' | 'drawing' | 'result'>('select');
   const [selectedSpread, setSelectedSpread] = useState<Spread | null>(null);
   const [question, setQuestion] = useState('');
+  const [isProtocolsOpen, setIsProtocolsOpen] = useState(false);
   
   // Selection Logic
   const [pickedIndices, setPickedIndices] = useState<{cardId: number, isReversed: boolean}[]>([]);
@@ -23,24 +28,6 @@ const Divination: React.FC = () => {
   const [aiInterpretation, setAiInterpretation] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [detailedCard, setDetailedCard] = useState<TarotCard | null>(null);
-  const [hasKey, setHasKey] = useState(true);
-
-  useEffect(() => {
-    const checkKey = async () => {
-        if (typeof (window as any).aistudio?.hasSelectedApiKey === 'function') {
-            const result = await (window as any).aistudio.hasSelectedApiKey();
-            setHasKey(result);
-        }
-    };
-    checkKey();
-  }, []);
-
-  const handleSelectKey = async () => {
-    if (typeof (window as any).aistudio?.openSelectKey === 'function') {
-        await (window as any).aistudio.openSelectKey();
-        setHasKey(true);
-    }
-  };
 
   const handleSpreadSelect = (spread: Spread) => {
     setSelectedSpread(spread);
@@ -56,7 +43,7 @@ const Divination: React.FC = () => {
   const handlePickCard = (deckIndex: number) => {
     if (!selectedSpread || pickedIndices.length >= selectedSpread.positions.length) return;
     
-    const isAlreadyPicked = pickedIndices.some((p: any) => p.deckIndex === deckIndex);
+    const isAlreadyPicked = pickedIndices.some((p: any) => (p as any).deckIndex === deckIndex);
     if (isAlreadyPicked) return;
 
     const cardId = deckIndex; 
@@ -68,7 +55,7 @@ const Divination: React.FC = () => {
 
     if (newPicks.length === selectedSpread.positions.length) {
         setTimeout(() => {
-            const finalDrawn = newPicks.map((pick, i) => ({
+            const finalDrawn = newPicks.map((pick: any, i) => ({
                 cardId: pick.cardId,
                 isReversed: pick.isReversed,
                 positionId: selectedSpread.positions[i].id
@@ -103,7 +90,6 @@ const Divination: React.FC = () => {
     try {
         const result = await interpretReading(question, selectedSpread, cardsForAI);
         setAiInterpretation(result);
-        if (result.includes("重新选择 API 密钥")) setHasKey(false);
     } catch (e) {
         console.error(e);
     } finally {
@@ -121,15 +107,111 @@ const Divination: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto min-h-[80vh] pb-20 px-4">
+    <div className="max-w-7xl mx-auto min-h-[80vh] pb-20 px-4 relative">
       
       {/* Step 1: Select Spread */}
       {step === 'select' && (
         <div className="animate-flip-in">
-          <div className="text-center mb-16">
-            <h1 className="text-4xl font-serif text-white mb-4 tracking-widest">选择神圣牌阵</h1>
-            <p className="text-slate-500 font-light">选择一个维度，开启与潜意识的对话。</p>
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-serif text-white mb-4 tracking-widest uppercase">选择神圣牌阵</h1>
+            <p className="text-slate-500 font-light max-w-lg mx-auto leading-relaxed italic">开启与潜意识的对话</p>
           </div>
+
+          {/* --- REFINED PROTOCOL SECTION --- */}
+          <div className="max-w-3xl mx-auto mb-16">
+            <div className={`transition-all duration-300 border border-white/10 rounded-2xl overflow-hidden bg-white/5`}>
+                
+                {/* Trigger Bar: Fixed container height and width to prevent morphing */}
+                <button 
+                    onClick={() => setIsProtocolsOpen(!isProtocolsOpen)}
+                    className="w-full flex items-center justify-between px-8 py-5 transition-all group hover:bg-white/5"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className={`transition-colors duration-500 ${isProtocolsOpen ? 'text-mystic-gold' : 'text-slate-500 group-hover:text-mystic-gold'}`}>
+                            <ShieldAlert size={18} className={!isProtocolsOpen ? "animate-pulse" : ""} />
+                        </div>
+                        <span className={`font-serif text-[11px] tracking-[0.5em] uppercase transition-all ${isProtocolsOpen ? 'text-white font-bold' : 'text-slate-400 group-hover:text-white'}`}>
+                            🔮 塔罗占卜禁忌 / 须知
+                        </span>
+                    </div>
+                    <ChevronDown 
+                        size={16} 
+                        className={`text-slate-600 transition-transform duration-500 ${isProtocolsOpen ? 'rotate-180 text-mystic-gold' : ''}`} 
+                    />
+                </button>
+
+                {/* Content Area: Direct vertical expansion without shape changes */}
+                <div 
+                    className={`transition-all duration-500 ease-in-out ${isProtocolsOpen ? 'max-h-[1500px] opacity-100 border-t border-white/5' : 'max-h-0 opacity-0 pointer-events-none'}`}
+                >
+                    <div className="p-8 md:p-12 space-y-12 bg-mystic-950/40 overflow-y-auto max-h-[65vh] custom-scrollbar">
+                        
+                        {/* Section I: 占卜过程中的禁忌 (GOLD) */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-4 text-mystic-gold border-l-4 border-mystic-gold/60 pl-5">
+                                <ShieldCheck size={20} />
+                                <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">一、占卜过程中的禁忌</h3>
+                            </div>
+                            <div className="space-y-6 pl-10">
+                                <ProtocolItem num="1" title="不可重复占卜相同问题" content="24小时内不可重复占卜完全相同的问题；同一问题建议间隔1-3个月再次占卜。反复占卜会受到主观意见影响，理智干预会阻碍潜意识调动。" />
+                                <ProtocolItem num="2" title="一次只问一个问题" content="不可在一次洗牌中询问多个问题。如有第二个问题，必须重新洗牌，确保你的专注力一次只锚定在一个特定的能量节点上。" />
+                                <ProtocolItem num="3" title="占卜的时间限制" content="塔罗牌最多只能占卜未来12个月的事。短期预测（3-6个月）最为准确；长远预测因变量过于复杂，准确度会随时间推移而降低。" />
+                            </div>
+                        </section>
+
+                        {/* Section II: 不能问的问题类型 (RED) */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-4 text-red-400 border-l-4 border-red-500/60 pl-5">
+                                <Ban size={20} />
+                                <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">二、不能问的问题类型</h3>
+                            </div>
+                            <div className="space-y-6 pl-10">
+                                <ProtocolItem num="1" title="健康与生死" content="严禁询问具体的疾病诊断及寿命终点，这些领域应咨询专业医疗机构。" />
+                                <ProtocolItem num="2" title="偏财与博彩" content="不可询问彩票中奖、赌博或具有高度投机性的偏财运势。" />
+                                <ProtocolItem num="3" title="法律与道德" content="严禁询问任何违反法律、危害他人或违背道德伦理的问题。" />
+                                <ProtocolItem num="4" title="隐私窥探" content="不可在未获得他人允许的情况下，恶意窥探他人的绝对隐私或生活细节。" />
+                            </div>
+                        </section>
+
+                        {/* Section III: 占卜环境要求 (INDIGO) */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-4 text-indigo-400 border-l-4 border-indigo-500/60 pl-5">
+                                <MapPin size={20} />
+                                <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">三、占卜环境要求</h3>
+                            </div>
+                            <div className="space-y-6 pl-10">
+                                <ProtocolItem num="1" title="安静舒适的空间" content="避免吵杂环境，选择一个能让你感到安全且不被打扰的私人空间。" />
+                                <ProtocolItem num="2" title="良好的精神状态" content="不要在情绪极端不稳定、精神疲惫、焦虑或醉酒的状态下开启占卜。" />
+                                <ProtocolItem num="3" title="排除外部干扰" content="保持呼吸平稳，关闭不必要的电子干扰，将所有注意力全神贯注于牌面与内心。" />
+                            </div>
+                        </section>
+
+                        {/* Section IV: 注意事项 (EMERALD) */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-4 text-emerald-400 border-l-4 border-emerald-500/60 pl-5">
+                                <UserCheck size={20} />
+                                <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">四、使用注意事项 (⚠️ 心态调整)</h3>
+                            </div>
+                            <div className="space-y-6 pl-10">
+                                <ProtocolItem num="1" title="不要过度依赖" content="塔罗牌是指引工具，不是唯一决策依据。请始终保留你的自主行动力和理性判断力。" />
+                                <ProtocolItem num="2" title="不要视为绝对预测" content="结果反映的是基于现状的某种可能性。通过你的认知改变和行动修正，未来是可以被重塑的。" />
+                                <ProtocolItem num="3" title="保持尊重与诚实" content="不要占卜纯粹出于戏谑、挑战或无聊的问题。尊重塔罗作为深度潜意识交流的严肃性。" />
+                            </div>
+                        </section>
+                    </div>
+                    
+                    <div className="p-5 text-center border-t border-white/5 bg-black/40">
+                        <button 
+                            onClick={() => setIsProtocolsOpen(false)}
+                            className="text-[10px] text-slate-600 hover:text-white uppercase tracking-[0.4em] transition-colors flex items-center gap-2 mx-auto"
+                        >
+                            收起占卜守则 <ChevronDown size={14} className="rotate-180" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {spreads.map(spread => (
                 <div 
@@ -156,153 +238,167 @@ const Divination: React.FC = () => {
       {/* Step 2: Input Question */}
       {step === 'input' && selectedSpread && (
         <div className="max-w-2xl mx-auto animate-flip-in pt-10">
-            <div className="glass-card p-10 rounded-[3rem] border border-white/10">
-                <div className="mb-10 text-center">
-                    <span className="text-[10px] text-mystic-gold uppercase tracking-[0.4em] mb-4 block opacity-60">Step Two: Intent</span>
-                    <h2 className="text-3xl font-serif text-white mb-2">{selectedSpread.name}</h2>
-                    <p className="text-slate-500 text-sm">明确你的意图，宇宙才能给出清晰的映射。</p>
+            <div className="glass-card p-10 rounded-[3.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <Compass size={120} className="animate-spin-slow text-mystic-gold"/>
+                </div>
+                
+                <div className="mb-10 text-center relative z-10">
+                    <span className="text-[10px] text-mystic-gold uppercase tracking-[0.5em] mb-4 block opacity-60 font-serif">Communion of Intent</span>
+                    <h2 className="text-4xl font-serif text-white mb-3">{selectedSpread.name}</h2>
+                    <p className="text-slate-500 text-sm italic font-light">“提问的方式，决定了宇宙回响的深度。”</p>
                 </div>
 
-                <div className="mb-10">
+                <div className="mb-10 relative z-10">
                     <textarea
                         autoFocus
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
-                        placeholder="在此输入你的困惑..."
-                        className="w-full bg-black/40 border border-white/10 p-6 rounded-3xl text-white focus:outline-none focus:border-mystic-gold/50 min-h-[180px] transition-all shadow-inner text-lg font-light leading-relaxed"
+                        placeholder="描述你的困惑或想要探索的领域..."
+                        className="w-full bg-black/40 border border-white/10 p-8 rounded-[2.5rem] text-white focus:outline-none focus:border-mystic-gold/40 min-h-[220px] transition-all shadow-inner text-xl font-light leading-relaxed placeholder-slate-700"
                     />
+                    <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-mystic-gold/5 rounded-xl border border-mystic-gold/10">
+                        <Info size={14} className="text-mystic-gold" />
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest">建议：使用开放式提问，如“我该如何优化目前的状态？”</p>
+                    </div>
                 </div>
                 
-                <div className="flex gap-4">
-                    <button onClick={() => setStep('select')} className="flex-1 py-4 rounded-2xl border border-white/10 text-slate-500 hover:text-white transition uppercase text-xs font-bold tracking-widest">返回</button>
+                <div className="flex gap-6 relative z-10">
+                    <button onClick={() => setStep('select')} className="flex-1 py-5 rounded-2xl border border-white/10 text-slate-500 hover:text-white transition uppercase text-[10px] font-bold tracking-widest">返回</button>
                     <button 
                         onClick={startDrawing}
                         disabled={!question.trim()}
-                        className="flex-[2] py-4 bg-mystic-gold text-mystic-950 rounded-2xl font-bold disabled:opacity-20 hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-3 uppercase text-xs tracking-widest"
+                        className="flex-[2] py-5 bg-gradient-to-tr from-mystic-gold to-yellow-600 text-mystic-950 rounded-2xl font-bold disabled:opacity-20 hover:shadow-xl hover:shadow-mystic-gold/20 active:scale-95 transition flex items-center justify-center gap-3 uppercase text-[10px] tracking-[0.3em]"
                     >
-                        前往抽取卡牌 <ChevronRight size={16}/>
+                        开启抽取序列 <ChevronRight size={16}/>
                     </button>
                 </div>
             </div>
         </div>
       )}
 
-      {/* Step 3: Drawing Cards - Enlarged UI */}
+      {/* Step 3: Drawing Cards */}
       {step === 'drawing' && selectedSpread && (
         <div className="animate-flip-in flex flex-col items-center w-full max-w-screen-xl mx-auto">
             <header className="w-full mb-12 text-center">
-                <h2 className="text-4xl font-serif text-white mb-4 tracking-wider">亲手开启命运</h2>
-                <p className="text-slate-400 text-lg font-light">
-                    请从下方的 78 张灵能矩阵中，凭直觉选出 <span className="text-mystic-gold font-bold">{selectedSpread.positions.length}</span> 张卡牌。
+                <h2 className="text-4xl lg:text-5xl font-serif text-white mb-4 tracking-wider uppercase">亲手开启命运</h2>
+                <p className="text-slate-400 text-lg font-light italic">
+                    深呼吸，从下方的灵能矩阵中凭直觉选出 <span className="text-mystic-gold font-bold">{selectedSpread.positions.length}</span> 张卡牌。
                 </p>
             </header>
 
-            {/* Selection Progress - More Prominent */}
+            {/* Selection Progress */}
             <div className="w-full max-w-2xl mb-16 space-y-6">
                 <div className="flex justify-between items-end">
                     <div className="flex items-center gap-3 text-mystic-gold font-serif uppercase tracking-[0.4em]">
                         <Sparkles size={20} className="animate-pulse" />
-                        <span className="text-xl">灵能收集</span>
+                        <span className="text-lg">灵能收集</span>
                     </div>
                     <span className="text-2xl font-serif text-white tracking-widest">{pickedIndices.length} / {selectedSpread.positions.length}</span>
                 </div>
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 p-0.5">
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                     <div 
-                        className="h-full bg-gradient-to-r from-mystic-600 via-mystic-gold to-mystic-400 transition-all duration-700 ease-out shadow-[0_0_20px_#fbbf24]" 
+                        className="h-full bg-gradient-to-r from-mystic-gold/40 via-mystic-gold to-mystic-gold/40 transition-all duration-700 ease-out shadow-[0_0_20px_#fbbf24]" 
                         style={{ width: `${(pickedIndices.length / selectedSpread.positions.length) * 100}%` }}
                     ></div>
                 </div>
             </div>
 
-            {/* The Arcana Pool: Enlarged Grid */}
-            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-4 md:gap-6 p-10 md:p-16 glass-card rounded-[4rem] border-white/10 w-full mb-20 shadow-[0_0_120px_rgba(0,0,0,0.6)] relative overflow-hidden">
+            {/* The Arcana Pool */}
+            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-3 md:gap-4 p-8 md:p-12 glass-card rounded-[3.5rem] border-white/5 w-full mb-20 shadow-[0_0_120px_rgba(0,0,0,0.6)] relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-tr from-mystic-gold/5 via-transparent to-mystic-600/5 pointer-events-none"></div>
                 
                 {Array.from({ length: 78 }).map((_, i) => {
-                    const isPicked = pickedIndices.some((p: any) => p.deckIndex === i);
+                    const isPicked = pickedIndices.some((p: any) => (p as any).deckIndex === i);
                     return (
                         <div 
                             key={i}
                             onClick={() => handlePickCard(i)}
                             className={`
-                                relative aspect-[2/3] w-full rounded-xl border border-white/10 transition-all duration-700 cursor-pointer
+                                relative aspect-[2/3] w-full rounded-lg border border-white/5 transition-all duration-700 cursor-pointer
                                 ${isPicked 
                                     ? 'opacity-0 scale-50 pointer-events-none -translate-y-24 blur-sm' 
-                                    : 'bg-[#0f172a] hover:border-mystic-gold/60 hover:shadow-[0_0_40px_rgba(251,191,36,0.3)] hover:-translate-y-3 hover:scale-105 active:scale-90 active:duration-150'
+                                    : 'bg-mystic-950 hover:border-mystic-gold/40 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)] hover:-translate-y-2 hover:scale-110 active:scale-90'
                                 }
                             `}
                         >
-                            {/* Card Back Design (Detailed for Large Scale) */}
-                            <div className="absolute inset-1.5 rounded-lg border border-white/5 flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/sacred-geometry.png')] bg-opacity-10">
-                                <div className="w-1.5 h-1.5 rounded-full bg-mystic-gold/20 shadow-[0_0_8px_rgba(251,191,36,0.2)]"></div>
-                                <div className="absolute top-2 left-2 w-1 h-1 bg-white/5 rounded-full"></div>
-                                <div className="absolute bottom-2 right-2 w-1 h-1 bg-white/5 rounded-full"></div>
+                            <div className="absolute inset-1 rounded-md border border-white/[0.02] flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/sacred-geometry.png')] bg-opacity-10 opacity-40">
+                                <div className="w-1 h-1 rounded-full bg-mystic-gold/20"></div>
                             </div>
                         </div>
                     );
                 })}
             </div>
             
-            <div className="flex items-center gap-4 text-slate-500 text-xs font-serif uppercase tracking-[0.3em] opacity-50 mb-10">
-                <div className="h-px w-12 bg-slate-800"></div>
-                <Info size={14} />
-                <span>已重置 78 张阿卡纳序列，请顺应内在指引</span>
-                <div className="h-px w-12 bg-slate-800"></div>
+            <div className="flex items-center gap-4 text-slate-500 text-[10px] font-serif uppercase tracking-[0.5em] opacity-30 mb-10">
+                <div className="h-px w-24 bg-gradient-to-r from-transparent to-slate-800"></div>
+                <Globe size={14} />
+                <span>The Universe is Listening</span>
+                <div className="h-px w-24 bg-gradient-to-l from-transparent to-slate-800"></div>
             </div>
         </div>
       )}
 
       {/* Step 4: Result Display */}
-      {step === 'result' && selectedSpread && (
+      {step === 'result' && (
           <div className="animate-flip-in">
-              <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8 glass-card p-10 rounded-[3rem] border-white/10">
-                  <div>
-                    <h2 className="text-[10px] text-mystic-gold uppercase tracking-[0.4em] mb-3">启示录解读</h2>
-                    <h1 className="text-4xl font-serif text-white mb-4">{selectedSpread.name}</h1>
-                    <div className="flex items-center gap-3 px-4 py-2 bg-black/40 rounded-full border border-white/5 w-fit">
-                        <HelpCircle size={14} className="text-mystic-gold" />
-                        <span className="text-sm italic text-slate-300">“{question}”</span>
+              <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8 glass-card p-12 rounded-[3.5rem] border-white/5">
+                  <div className="space-y-4">
+                    <span className="text-[10px] text-mystic-gold uppercase tracking-[0.6em] block opacity-60 font-serif">Revelation of Arcana</span>
+                    <h1 className="text-5xl font-serif text-white tracking-tighter uppercase">{selectedSpread?.name}</h1>
+                    <div className="flex items-center gap-4 px-6 py-3 bg-black/40 rounded-3xl border border-white/5 w-fit shadow-inner">
+                        <HelpCircle size={16} className="text-mystic-gold" />
+                        <span className="text-lg italic text-slate-300 font-light tracking-wide">“{question}”</span>
                     </div>
                   </div>
-                  <button onClick={reset} className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition group">
+                  <button onClick={reset} className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95">
                       <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 开启新占卜
                   </button>
               </header>
 
               {/* Spread Visualizer */}
-              <div className="mb-24">
-                  <div className="flex flex-wrap justify-center gap-10 md:gap-16">
+              <div className="mb-32">
+                  <div className="flex flex-wrap justify-center gap-10 md:gap-20">
                       {drawnCards.map((draw, index) => {
                           const card = tarotDeck.find(c => c.id === draw.cardId);
-                          const position = selectedSpread.positions.find(p => p.id === draw.positionId);
+                          const position = selectedSpread?.positions.find(p => p.id === draw.positionId);
                           const isRevealed = revealedIndices.includes(index);
 
                           return (
-                              <div key={index} className="flex flex-col items-center space-y-6">
-                                  <div className="px-4 py-1.5 bg-mystic-900 border border-white/10 rounded-full text-[9px] text-mystic-gold uppercase tracking-[0.2em] font-bold shadow-xl">
+                              <div key={index} className="flex flex-col items-center space-y-8 animate-flip-in" style={{ animationDelay: `${index * 150}ms` }}>
+                                  <div className="px-6 py-2 bg-mystic-950 border border-mystic-gold/10 rounded-full text-[10px] text-mystic-gold uppercase tracking-[0.3em] font-serif shadow-2xl">
                                       {position?.name}
                                   </div>
-                                  <div className="relative group">
+                                  <div className="relative group transition-transform duration-700 hover:-translate-y-4">
+                                    <div className={`absolute -inset-10 rounded-full blur-[60px] transition-all duration-1000 ${isRevealed ? 'bg-mystic-gold/10' : 'bg-transparent'}`}></div>
                                     <CardFlip 
                                         card={card || null} 
                                         isRevealed={isRevealed} 
                                         isReversed={draw.isReversed}
                                         onClick={() => handleCardClick(index)}
-                                        width="w-36 md:w-52"
-                                        height="h-56 md:h-80"
+                                        width="w-40 md:w-56"
+                                        height="h-64 md:h-88"
                                     />
                                     {isRevealed && (
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); setDetailedCard(card || null); }}
-                                            className="absolute top-4 right-4 p-2 bg-black/80 rounded-full text-mystic-gold opacity-0 group-hover:opacity-100 transition-all border border-white/10 shadow-2xl scale-75 group-hover:scale-100"
+                                            className="absolute top-4 right-4 p-3 bg-black/80 rounded-full text-mystic-gold opacity-0 group-hover:opacity-100 transition-all border border-white/10 shadow-2xl scale-75 group-hover:scale-100"
                                         >
-                                            <BookOpen size={16} />
+                                            <BookOpen size={18} />
                                         </button>
                                     )}
                                   </div>
-                                  <div className={`text-center transition-all duration-1000 ${isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                                      <p className="text-white font-bold text-lg mb-1">{card?.nameCn}</p>
-                                      {draw.isReversed && <span className="text-red-500 text-[10px] font-bold uppercase tracking-widest">Reversed 逆位</span>}
+                                  <div className={`text-center transition-all duration-1000 ${isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                                      <p className="text-white font-serif font-bold text-2xl tracking-widest mb-2">{card?.nameCn}</p>
+                                      {draw.isReversed ? (
+                                          <span className="text-red-500/80 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                                              <Zap size={10} /> Reversed 逆位
+                                          </span>
+                                      ) : (
+                                          <span className="text-emerald-500/80 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                                              <Sparkles size={10} /> Upright 正位
+                                          </span>
+                                      )}
                                   </div>
                               </div>
                           );
@@ -311,17 +407,17 @@ const Divination: React.FC = () => {
               </div>
 
               {/* AI Analysis Section */}
-              <div className="glass-card rounded-[4rem] border-white/5 p-12 md:p-20 relative overflow-hidden shadow-2xl">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-mystic-gold/20 to-transparent"></div>
+              <div className="glass-card rounded-[4rem] border-white/5 p-16 md:p-24 relative overflow-hidden shadow-2xl mb-20 bg-mystic-950/20 backdrop-blur-md">
+                  <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-mystic-gold/40 to-transparent"></div>
                   
                   <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-8">
-                      <div className="flex items-center gap-6">
-                          <div className="p-5 bg-purple-900/20 rounded-[2rem] border border-purple-500/10 shadow-[0_0_40px_rgba(168,85,247,0.1)]">
-                            <BrainCircuit className="text-purple-400 w-10 h-10"/>
+                      <div className="flex items-center gap-8">
+                          <div className="p-6 bg-purple-900/10 rounded-[2.5rem] border border-purple-500/10 shadow-[0_0_50px_rgba(168,85,247,0.05)]">
+                            <BrainCircuit className="text-purple-400 w-12 h-12"/>
                           </div>
-                          <div>
-                            <h3 className="text-3xl font-serif text-white mb-2">灵能深度解析</h3>
-                            <p className="text-slate-500 text-sm font-light">基于象征学背景的 AI 映射报告</p>
+                          <div className="space-y-1">
+                            <h3 className="text-4xl font-serif text-white tracking-tight uppercase">灵能深度报告</h3>
+                            <p className="text-slate-500 text-sm font-light tracking-widest uppercase italic">Harmonic Resonance Analysis</p>
                           </div>
                       </div>
                       
@@ -329,35 +425,38 @@ const Divination: React.FC = () => {
                         <button 
                             onClick={handleAIRequest}
                             disabled={isLoadingAI || revealedIndices.length < drawnCards.length}
-                            className="group px-10 py-5 bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-20 text-white rounded-[2rem] transition-all shadow-xl shadow-purple-900/30 font-bold flex items-center gap-4 active:scale-95"
+                            className="group px-12 py-6 bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-20 text-white rounded-[2.5rem] transition-all shadow-2xl shadow-purple-950/50 font-bold flex items-center gap-4 active:scale-95"
                         >
-                            {isLoadingAI ? '正在调阅宇宙档案...' : '生成 AI 深度报告'}
+                            {isLoadingAI ? '正在同步高维智慧...' : '生成 AI 深度解读'}
                             {!isLoadingAI && <Sparkles size={20} className="animate-pulse" />}
                         </button>
                       )}
                   </div>
 
                   {revealedIndices.length < drawnCards.length ? (
-                      <div className="text-center py-20 border border-dashed border-white/10 rounded-[3rem] bg-white/[0.02] animate-pulse">
-                          <Eye size={48} className="mx-auto mb-6 text-slate-700" />
-                          <p className="text-slate-500 font-serif tracking-widest">请点击上方卡片翻开所有真相...</p>
+                      <div className="text-center py-24 border border-dashed border-white/5 rounded-[4rem] bg-white/[0.01] animate-pulse">
+                          <Eye size={48} className="mx-auto mb-6 text-slate-800" />
+                          <p className="text-slate-600 font-serif tracking-[0.5em] uppercase text-xs">翻开所有真相以开启解读</p>
                       </div>
                   ) : (
                       <div className="space-y-12">
                           {isLoadingAI && (
-                               <div className="text-center py-24 space-y-8">
-                                    <div className="relative w-24 h-24 mx-auto">
-                                        <div className="absolute inset-0 border-2 border-purple-500/10 rounded-full"></div>
-                                        <div className="absolute inset-0 border-2 border-t-purple-500 rounded-full animate-spin"></div>
-                                        <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-400 w-10 h-10 animate-pulse" />
+                               <div className="text-center py-24 space-y-10">
+                                    <div className="relative w-28 h-28 mx-auto">
+                                        <div className="absolute inset-0 border border-purple-500/10 rounded-full animate-ping"></div>
+                                        <div className="absolute inset-0 border border-t-purple-500 rounded-full animate-spin"></div>
+                                        <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-400 w-12 h-12 animate-pulse" />
                                     </div>
-                                    <p className="text-purple-300 font-serif text-2xl tracking-widest animate-pulse">正在接收共时性讯息...</p>
+                                    <div className="space-y-4">
+                                        <p className="text-purple-300 font-serif text-3xl tracking-[0.3em] animate-pulse uppercase">调阅阿卡纳档案...</p>
+                                        <p className="text-slate-600 text-[10px] uppercase tracking-[0.5em]">Synchronizing with Cosmic Matrix</p>
+                                    </div>
                                </div>
                           )}
 
                           {aiInterpretation && (
                               <div className="prose prose-invert prose-purple max-w-none animate-flip-in">
-                                  <div className="bg-black/30 p-10 md:p-16 rounded-[3rem] border border-white/5 leading-relaxed font-sans text-slate-200 whitespace-pre-wrap shadow-inner text-lg">
+                                  <div className="bg-black/30 p-12 md:p-20 rounded-[4rem] border border-white/5 leading-loose font-sans text-slate-200 whitespace-pre-wrap shadow-inner text-xl font-light">
                                       {aiInterpretation}
                                   </div>
                               </div>
@@ -373,54 +472,33 @@ const Divination: React.FC = () => {
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-flip-in" onClick={() => setDetailedCard(null)}>
             <div 
                 onClick={(e) => e.stopPropagation()} 
-                className="relative bg-mystic-900 w-full max-w-4xl max-h-[90vh] rounded-[3rem] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,1)] overflow-hidden flex flex-col md:flex-row"
+                className="relative bg-mystic-900 w-full max-w-4xl max-h-[90vh] rounded-[3.5rem] border border-white/10 shadow-[0_0_100px_rgba(0,0,0,1)] overflow-hidden flex flex-col md:flex-row"
             >
-                <button 
-                    onClick={() => setDetailedCard(null)}
-                    className="absolute top-6 right-6 p-3 bg-black/60 rounded-full text-white hover:bg-red-900/80 z-20 transition-all shadow-xl active:scale-90"
-                >
-                    <X size={24} />
+                <button onClick={() => setDetailedCard(null)} className="absolute top-8 right-8 p-3 bg-black/60 rounded-full text-white hover:bg-red-900/80 z-20 transition-all shadow-xl scale-90 active:scale-75">
+                    <X size={20} />
                 </button>
-
                 <div className="md:w-5/12 bg-black flex-shrink-0 h-[40vh] md:h-auto border-b md:border-b-0 md:border-r border-white/5">
-                    <div className="w-full h-full flex items-center justify-center p-10">
-                        <img 
-                            src={getCardImageUrl(detailedCard.id)} 
-                            className="w-full h-full object-contain drop-shadow-[0_0_30px_rgba(251,191,36,0.3)]"
-                            alt={detailedCard.nameEn} 
-                            onError={(e) => { (e.target as any).src = 'https://placehold.co/400x700?text=Card+Image'; }}
-                        />
+                    <div className="w-full h-full flex items-center justify-center p-12">
+                        <img src={getCardImageUrl(detailedCard.id)} className="w-full h-full object-contain drop-shadow-2xl" alt={detailedCard.nameEn} />
                     </div>
                 </div>
-
-                <div className="md:w-7/12 p-10 md:p-16 overflow-y-auto flex-1 bg-mystic-900 custom-scrollbar">
-                    <div className="mb-10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="w-10 h-px bg-mystic-gold"></span>
-                            <span className="text-[10px] text-mystic-gold uppercase tracking-[0.4em] font-bold">The Arcana</span>
+                <div className="md:w-7/12 p-12 md:p-16 overflow-y-auto flex-1 bg-mystic-900 custom-scrollbar">
+                    <div className="mb-12">
+                        <div className="flex items-center gap-3 mb-3">
+                            <span className="w-12 h-px bg-mystic-gold"></span>
+                            <span className="text-[10px] text-mystic-gold uppercase tracking-[0.5em] font-bold font-serif">The Archive</span>
                         </div>
-                        <h2 className="text-4xl font-serif text-white mb-2">{detailedCard.nameCn}</h2>
-                        <p className="text-slate-500 italic font-serif text-sm tracking-widest">{detailedCard.nameEn}</p>
+                        <h2 className="text-5xl font-serif text-white mb-2 tracking-tight">{detailedCard.nameCn}</h2>
+                        <p className="text-slate-500 italic font-serif text-sm tracking-[0.3em] uppercase">{detailedCard.nameEn}</p>
                     </div>
-
-                    <div className="space-y-10">
-                        <div className="p-6 bg-white/[0.03] rounded-3xl border border-white/5">
-                            <h3 className="text-xs font-bold text-violet-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <CheckCircle size={14} /> 正位启示
-                            </h3>
-                            <p className="text-slate-200 leading-relaxed text-md font-light">{detailedCard.meaningUp}</p>
+                    <div className="space-y-12">
+                        <div className="p-8 bg-white/[0.02] rounded-[2.5rem] border border-white/5">
+                            <h3 className="text-[10px] font-bold text-violet-400 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"> 正位启示</h3>
+                            <p className="text-slate-200 leading-relaxed text-lg font-light">{detailedCard.meaningUp}</p>
                         </div>
-                        
-                        <div className="p-6 bg-white/[0.03] rounded-3xl border border-white/5">
-                            <h3 className="text-xs font-bold text-red-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <X size={14} /> 逆位警告
-                            </h3>
-                            <p className="text-slate-300 leading-relaxed text-md font-light">{detailedCard.meaningDown}</p>
-                        </div>
-
-                        <div>
-                            <h3 className="text-[10px] font-bold text-blue-400 mb-4 uppercase tracking-[0.3em] flex items-center gap-2">象征深意</h3>
-                            <p className="text-slate-500 text-sm leading-relaxed italic font-light">{detailedCard.description}</p>
+                        <div className="p-8 bg-white/[0.02] rounded-[2.5rem] border border-white/5">
+                            <h3 className="text-[10px] font-bold text-red-400 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"> 逆位警告</h3>
+                            <p className="text-slate-300 leading-relaxed text-lg font-light">{detailedCard.meaningDown}</p>
                         </div>
                     </div>
                 </div>
@@ -430,5 +508,16 @@ const Divination: React.FC = () => {
     </div>
   );
 };
+
+// Unified sub-component for individual protocol points (Standards formatting 1, 2, 3)
+const ProtocolItem: React.FC<{num: string, title: string, content: string}> = ({num, title, content}) => (
+    <div className="flex gap-4 group">
+        <span className="text-white/20 font-serif font-bold text-[14px] shrink-0 mt-0.5">{num}.</span>
+        <div className="text-[13.5px]">
+            <span className="text-slate-200 font-bold block mb-2 group-hover:text-white transition-colors tracking-wide leading-none">{title}</span>
+            <p className="text-slate-400 font-light leading-relaxed">{content}</p>
+        </div>
+    </div>
+);
 
 export default Divination;
