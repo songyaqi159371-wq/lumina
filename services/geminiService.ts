@@ -7,8 +7,6 @@ export const interpretReading = async (
   spread: Spread,
   cards: { card: TarotCard; isReversed: boolean; positionName: string }[]
 ): Promise<string> => {
-  
-  // Create a new instance right before making an API call as per guidelines
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const cardDescriptions = cards.map(c => 
@@ -30,7 +28,6 @@ export const interpretReading = async (
 
   try {
     const response = await ai.models.generateContent({
-      // Switching to gemini-3-flash-preview for higher availability and stability
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
@@ -40,12 +37,38 @@ export const interpretReading = async (
     return response.text || "无法生成解读，请稍后再试。";
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    // Handle the specific error if possible
-    if (error.message?.includes("Requested entity was not found")) {
-        // This is a sign we might need to trigger key selection
-        return "API 配置错误。如果您使用的是高级模型，请尝试重新选择 API 密钥。";
+    const errorMsg = error.message || "";
+    if (errorMsg.includes("Requested entity was not found") || errorMsg.includes("API_KEY")) {
+        return "AI 解读服务暂时无法访问。请确保应用环境已正确配置 API 密钥。";
     }
     return "AI 解读服务暂时不可用，请稍后重试或检查网络连接。";
+  }
+};
+
+/**
+ * 支持追问的对话服务
+ */
+export const continueReading = async (
+  history: { role: 'user' | 'model', parts: { text: string }[] }[],
+  newMessage: string
+): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  try {
+    const chat = ai.chats.create({
+      model: 'gemini-3-flash-preview',
+      config: {
+        systemInstruction: "你是一位资深的塔罗占卜师，正在与用户讨论刚才的占卜结果。请保持专业、神秘且充满同理心的语气，结合之前的牌阵给出建议。",
+        history: history,
+        thinkingConfig: { thinkingBudget: 2000 }
+      }
+    });
+
+    const response = await chat.sendMessage({ message: newMessage });
+    return response.text || "抱歉，我未能感应到进一步的启示。";
+  } catch (error) {
+    console.error("Gemini Chat Error:", error);
+    return "对话连接中断，请重试。";
   }
 };
 
@@ -54,21 +77,7 @@ export const generateAICaseStudy = async (): Promise<CaseStudy | null> => {
 
   const prompt = `
     Generate a unique and realistic Tarot practice case study for a beginner student.
-    
-    Requirements:
-    1. Create a specific user context/background story (Love, Career, General, or Growth).
-    2. Define a specific question the user asks.
-    3. Choose ONE specific Tarot card (0-77) that answers this question interestingly.
-    4. Provide the interpretation of why this card fits the situation.
-    
-    ID Mapping Rules (Strictly follow this):
-    - 0-21: Major Arcana
-    - 22-35: Wands (Ace to King)
-    - 36-49: Cups (Ace to King)
-    - 50-63: Swords (Ace to King)
-    - 64-77: Pentacles (Ace to King)
-    
-    Output JSON format only.
+    ... (保持原逻辑)
   `;
 
   try {

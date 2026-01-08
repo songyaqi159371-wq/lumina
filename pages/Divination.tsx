@@ -1,17 +1,22 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { spreads, tarotDeck, getCardImageUrl } from '../constants';
 import { Spread, TarotCard } from '../types';
 import CardFlip from '../components/CardFlip';
-import { interpretReading } from '../services/geminiService';
+import { interpretReading, continueReading } from '../services/geminiService';
 import { 
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight, 
     HelpCircle, Eye, X, BookOpen, 
     Info, ShieldAlert,
-    Compass, Zap, Globe,
+    Compass, Zap, Globe, MessageSquarePlus, Send,
     ChevronDown, Ban,
     ShieldCheck, MapPin, UserCheck
 } from 'lucide-react';
+
+interface ChatMessage {
+    role: 'user' | 'model';
+    parts: { text: string }[];
+}
 
 const Divination: React.FC = () => {
   const [step, setStep] = useState<'select' | 'input' | 'drawing' | 'result'>('select');
@@ -28,6 +33,22 @@ const Divination: React.FC = () => {
   const [aiInterpretation, setAiInterpretation] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [detailedCard, setDetailedCard] = useState<TarotCard | null>(null);
+  
+  // Chat/Follow-up State
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [followUpText, setFollowUpText] = useState('');
+  const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (chatHistory.length > 1) {
+        scrollToBottom();
+    }
+  }, [chatHistory, isSendingFollowUp]);
 
   const handleSpreadSelect = (spread: Spread) => {
     setSelectedSpread(spread);
@@ -90,10 +111,42 @@ const Divination: React.FC = () => {
     try {
         const result = await interpretReading(question, selectedSpread, cardsForAI);
         setAiInterpretation(result);
+        // 初始化对话历史
+        setChatHistory([
+            { role: 'user', parts: [{ text: `请解读牌阵。问题是：${question}` }] },
+            { role: 'model', parts: [{ text: result }] }
+        ]);
     } catch (e) {
         console.error(e);
+        setAiInterpretation("解读过程中遇到了一些波折，请检查网络连接或稍后再试。");
     } finally {
         setIsLoadingAI(false);
+    }
+  };
+
+  const handleSendFollowUp = async () => {
+    if (!followUpText.trim() || isSendingFollowUp) return;
+    
+    const userMsg = followUpText.trim();
+    setFollowUpText('');
+    setIsSendingFollowUp(true);
+    
+    const updatedHistory: ChatMessage[] = [
+        ...chatHistory,
+        { role: 'user', parts: [{ text: userMsg }] }
+    ];
+    setChatHistory(updatedHistory);
+
+    try {
+        const responseText = await continueReading(chatHistory, userMsg);
+        setChatHistory(prev => [
+            ...prev,
+            { role: 'model', parts: [{ text: responseText }] }
+        ]);
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setIsSendingFollowUp(false);
     }
   };
 
@@ -104,6 +157,8 @@ const Divination: React.FC = () => {
     setDrawnCards([]);
     setRevealedIndices([]);
     setAiInterpretation('');
+    setChatHistory([]);
+    setFollowUpText('');
   };
 
   return (
@@ -117,11 +172,8 @@ const Divination: React.FC = () => {
             <p className="text-slate-500 font-light max-w-lg mx-auto leading-relaxed italic">开启与潜意识的对话</p>
           </div>
 
-          {/* --- REFINED PROTOCOL SECTION --- */}
           <div className="max-w-3xl mx-auto mb-16">
             <div className={`transition-all duration-300 border border-white/10 rounded-2xl overflow-hidden bg-white/5`}>
-                
-                {/* Trigger Bar: Fixed container height and width to prevent morphing */}
                 <button 
                     onClick={() => setIsProtocolsOpen(!isProtocolsOpen)}
                     className="w-full flex items-center justify-between px-8 py-5 transition-all group hover:bg-white/5"
@@ -140,40 +192,34 @@ const Divination: React.FC = () => {
                     />
                 </button>
 
-                {/* Content Area: Direct vertical expansion without shape changes */}
                 <div 
                     className={`transition-all duration-500 ease-in-out ${isProtocolsOpen ? 'max-h-[1500px] opacity-100 border-t border-white/5' : 'max-h-0 opacity-0 pointer-events-none'}`}
                 >
                     <div className="p-8 md:p-12 space-y-12 bg-mystic-950/40 overflow-y-auto max-h-[65vh] custom-scrollbar">
-                        
-                        {/* Section I: 占卜过程中的禁忌 (GOLD) */}
                         <section className="space-y-6">
                             <div className="flex items-center gap-4 text-mystic-gold border-l-4 border-mystic-gold/60 pl-5">
                                 <ShieldCheck size={20} />
                                 <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">一、占卜过程中的禁忌</h3>
                             </div>
                             <div className="space-y-6 pl-10">
-                                <ProtocolItem num="1" title="不可重复占卜相同问题" content="24小时内不可重复占卜完全相同的问题；同一问题建议间隔1-3个月再次占卜。反复占卜会受到主观意见影响，理智干预会阻碍潜意识调动。" />
-                                <ProtocolItem num="2" title="一次只问一个问题" content="不可在一次洗牌中询问多个问题。如有第二个问题，必须重新洗牌，确保你的专注力一次只锚定在一个特定的能量节点上。" />
-                                <ProtocolItem num="3" title="占卜的时间限制" content="塔罗牌最多只能占卜未来12个月的事。短期预测（3-6个月）最为准确；长远预测因变量过于复杂，准确度会随时间推移而降低。" />
+                                <ProtocolItem num="1" title="不可重复占卜相同问题" content="24小时内不可重复占卜完全相同的问题；同一问题建议间隔1-3个月再次占卜。" />
+                                <ProtocolItem num="2" title="一次只问一个问题" content="不可在一次洗牌中询问多个问题。如有第二个问题，必须重新洗牌。" />
+                                <ProtocolItem num="3" title="占卜的时间限制" content="塔罗牌最多只能占卜未来12个月的事。短期预测最为准确。" />
                             </div>
                         </section>
 
-                        {/* Section II: 不能问的问题类型 (RED) */}
                         <section className="space-y-6">
                             <div className="flex items-center gap-4 text-red-400 border-l-4 border-red-500/60 pl-5">
                                 <Ban size={20} />
                                 <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">二、不能问的问题类型</h3>
                             </div>
                             <div className="space-y-6 pl-10">
-                                <ProtocolItem num="1" title="健康与生死" content="严禁询问具体的疾病诊断及寿命终点，这些领域应咨询专业医疗机构。" />
-                                <ProtocolItem num="2" title="偏财与博彩" content="不可询问彩票中奖、赌博或具有高度投机性的偏财运势。" />
+                                <ProtocolItem num="1" title="健康与生死" content="严禁询问具体的疾病诊断及寿命终点。" />
+                                <ProtocolItem num="2" title="偏财与博彩" content="不可询问彩票中奖、赌博或高度投机性的偏财运势。" />
                                 <ProtocolItem num="3" title="法律与道德" content="严禁询问任何违反法律、危害他人或违背道德伦理的问题。" />
-                                <ProtocolItem num="4" title="隐私窥探" content="不可在未获得他人允许的情况下，恶意窥探他人的绝对隐私或生活细节。" />
                             </div>
                         </section>
 
-                        {/* Section III: 占卜环境要求 (INDIGO) */}
                         <section className="space-y-6">
                             <div className="flex items-center gap-4 text-indigo-400 border-l-4 border-indigo-500/60 pl-5">
                                 <MapPin size={20} />
@@ -181,21 +227,18 @@ const Divination: React.FC = () => {
                             </div>
                             <div className="space-y-6 pl-10">
                                 <ProtocolItem num="1" title="安静舒适的空间" content="避免吵杂环境，选择一个能让你感到安全且不被打扰的私人空间。" />
-                                <ProtocolItem num="2" title="良好的精神状态" content="不要在情绪极端不稳定、精神疲惫、焦虑或醉酒的状态下开启占卜。" />
-                                <ProtocolItem num="3" title="排除外部干扰" content="保持呼吸平稳，关闭不必要的电子干扰，将所有注意力全神贯注于牌面与内心。" />
+                                <ProtocolItem num="2" title="良好的精神状态" content="不要在情绪极端不稳定、精神疲惫或醉酒的状态下开启占卜。" />
                             </div>
                         </section>
 
-                        {/* Section IV: 注意事项 (EMERALD) */}
                         <section className="space-y-6">
                             <div className="flex items-center gap-4 text-emerald-400 border-l-4 border-emerald-500/60 pl-5">
                                 <UserCheck size={20} />
-                                <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">四、使用注意事项 (⚠️ 心态调整)</h3>
+                                <h3 className="text-[15px] font-serif font-bold uppercase tracking-[0.2em]">四、使用注意事项</h3>
                             </div>
                             <div className="space-y-6 pl-10">
-                                <ProtocolItem num="1" title="不要过度依赖" content="塔罗牌是指引工具，不是唯一决策依据。请始终保留你的自主行动力和理性判断力。" />
-                                <ProtocolItem num="2" title="不要视为绝对预测" content="结果反映的是基于现状的某种可能性。通过你的认知改变和行动修正，未来是可以被重塑的。" />
-                                <ProtocolItem num="3" title="保持尊重与诚实" content="不要占卜纯粹出于戏谑、挑战或无聊的问题。尊重塔罗作为深度潜意识交流的严肃性。" />
+                                <ProtocolItem num="1" title="不要过度依赖" content="塔罗牌是引路工具，不是唯一决策依据。请始终保留你的自主行动力和理性判断力。" />
+                                <ProtocolItem num="2" title="保持尊重与诚实" content="不要占卜纯粹出于戏谑、挑战或无聊的问题。" />
                             </div>
                         </section>
                     </div>
@@ -257,10 +300,6 @@ const Divination: React.FC = () => {
                         placeholder="描述你的困惑或想要探索的领域..."
                         className="w-full bg-black/40 border border-white/10 p-8 rounded-[2.5rem] text-white focus:outline-none focus:border-mystic-gold/40 min-h-[220px] transition-all shadow-inner text-xl font-light leading-relaxed placeholder-slate-700"
                     />
-                    <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-mystic-gold/5 rounded-xl border border-mystic-gold/10">
-                        <Info size={14} className="text-mystic-gold" />
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest">建议：使用开放式提问，如“我该如何优化目前的状态？”</p>
-                    </div>
                 </div>
                 
                 <div className="flex gap-6 relative z-10">
@@ -287,7 +326,6 @@ const Divination: React.FC = () => {
                 </p>
             </header>
 
-            {/* Selection Progress */}
             <div className="w-full max-w-2xl mb-16 space-y-6">
                 <div className="flex justify-between items-end">
                     <div className="flex items-center gap-3 text-mystic-gold font-serif uppercase tracking-[0.4em]">
@@ -304,10 +342,7 @@ const Divination: React.FC = () => {
                 </div>
             </div>
 
-            {/* The Arcana Pool */}
             <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-3 md:gap-4 p-8 md:p-12 glass-card rounded-[3.5rem] border-white/5 w-full mb-20 shadow-[0_0_120px_rgba(0,0,0,0.6)] relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-mystic-gold/5 via-transparent to-mystic-600/5 pointer-events-none"></div>
-                
                 {Array.from({ length: 78 }).map((_, i) => {
                     const isPicked = pickedIndices.some((p: any) => (p as any).deckIndex === i);
                     return (
@@ -331,10 +366,8 @@ const Divination: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4 text-slate-500 text-[10px] font-serif uppercase tracking-[0.5em] opacity-30 mb-10">
-                <div className="h-px w-24 bg-gradient-to-r from-transparent to-slate-800"></div>
                 <Globe size={14} />
                 <span>The Universe is Listening</span>
-                <div className="h-px w-24 bg-gradient-to-l from-transparent to-slate-800"></div>
             </div>
         </div>
       )}
@@ -356,7 +389,6 @@ const Divination: React.FC = () => {
                   </button>
               </header>
 
-              {/* Spread Visualizer */}
               <div className="mb-32">
                   <div className="flex flex-wrap justify-center gap-10 md:gap-20">
                       {drawnCards.map((draw, index) => {
@@ -406,8 +438,8 @@ const Divination: React.FC = () => {
                   </div>
               </div>
 
-              {/* AI Analysis Section */}
-              <div className="glass-card rounded-[4rem] border-white/5 p-16 md:p-24 relative overflow-hidden shadow-2xl mb-20 bg-mystic-950/20 backdrop-blur-md">
+              {/* AI Analysis Section with Chat Thread */}
+              <div className="glass-card rounded-[4rem] border-white/5 p-12 md:p-20 relative overflow-hidden shadow-2xl mb-20 bg-mystic-950/20 backdrop-blur-md">
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-mystic-gold/40 to-transparent"></div>
                   
                   <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-8">
@@ -454,10 +486,69 @@ const Divination: React.FC = () => {
                                </div>
                           )}
 
-                          {aiInterpretation && (
-                              <div className="prose prose-invert prose-purple max-w-none animate-flip-in">
-                                  <div className="bg-black/30 p-12 md:p-20 rounded-[4rem] border border-white/5 leading-loose font-sans text-slate-200 whitespace-pre-wrap shadow-inner text-xl font-light">
-                                      {aiInterpretation}
+                          {chatHistory.length > 0 && (
+                              <div className="space-y-10 animate-flip-in">
+                                  {chatHistory.filter(msg => msg.role === 'model' || msg.parts[0].text !== `请解读牌阵。问题是：${question}`).map((msg, msgIdx) => (
+                                      <div key={msgIdx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                          <div className={`max-w-[90%] md:max-w-[80%] rounded-[2.5rem] p-8 md:p-12 border ${
+                                              msg.role === 'user' 
+                                                ? 'bg-mystic- gold/5 border-mystic-gold/20 text-white rounded-br-none' 
+                                                : 'bg-black/30 border-white/5 text-slate-200 rounded-bl-none shadow-inner'
+                                          }`}>
+                                              {msg.role === 'user' && <div className="text-[10px] text-mystic-gold uppercase tracking-widest mb-4 opacity-60">你追问道</div>}
+                                              <div className="prose prose-invert prose-purple max-w-none text-lg font-light leading-relaxed whitespace-pre-wrap">
+                                                  {msg.parts[0].text}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  ))}
+                                  
+                                  {isSendingFollowUp && (
+                                      <div className="flex justify-start animate-pulse">
+                                          <div className="bg-black/20 border border-white/5 rounded-3xl p-6 flex items-center gap-3">
+                                              <div className="flex gap-1">
+                                                  <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce"></div>
+                                                  <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                                  <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                              </div>
+                                              <span className="text-[10px] text-slate-500 uppercase tracking-widest">感应中...</span>
+                                          </div>
+                                      </div>
+                                  )}
+
+                                  <div ref={chatEndRef} />
+
+                                  {/* Follow-up Input Box */}
+                                  <div className="mt-20 pt-12 border-t border-white/5 relative">
+                                      <div className="flex items-center gap-4 mb-6">
+                                          <div className="p-2 bg-mystic-gold/10 rounded-lg">
+                                              <MessageSquarePlus size={16} className="text-mystic-gold"/>
+                                          </div>
+                                          <h4 className="text-[10px] text-mystic-gold uppercase tracking-[0.4em] font-serif">深空对话 / 继续追问</h4>
+                                      </div>
+                                      
+                                      <div className="relative group">
+                                          <textarea 
+                                              value={followUpText}
+                                              onChange={(e) => setFollowUpText(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                                      e.preventDefault();
+                                                      handleSendFollowUp();
+                                                  }
+                                              }}
+                                              placeholder="关于这个解读，你还有什么想要深入了解的吗？"
+                                              className="w-full bg-black/40 border border-white/10 p-8 pr-20 rounded-3xl text-white focus:outline-none focus:border-mystic-gold/40 min-h-[120px] transition-all shadow-inner text-lg font-light placeholder-slate-700 resize-none"
+                                          />
+                                          <button 
+                                              onClick={handleSendFollowUp}
+                                              disabled={!followUpText.trim() || isSendingFollowUp}
+                                              className="absolute bottom-6 right-6 p-4 bg-mystic-gold text-mystic-950 rounded-2xl disabled:opacity-20 hover:scale-105 active:scale-95 transition-all shadow-lg"
+                                          >
+                                              <Send size={20} />
+                                          </button>
+                                      </div>
+                                      <p className="mt-4 text-[9px] text-slate-600 uppercase tracking-widest text-center italic">你可以询问细节，如：“这张逆位的牌对我意味着什么？”或“未来的阻碍具体是什么？”</p>
                                   </div>
                               </div>
                           )}
@@ -509,7 +600,6 @@ const Divination: React.FC = () => {
   );
 };
 
-// Unified sub-component for individual protocol points (Standards formatting 1, 2, 3)
 const ProtocolItem: React.FC<{num: string, title: string, content: string}> = ({num, title, content}) => (
     <div className="flex gap-4 group">
         <span className="text-white/20 font-serif font-bold text-[14px] shrink-0 mt-0.5">{num}.</span>
