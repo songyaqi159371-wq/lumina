@@ -4,6 +4,7 @@ import { spreads, tarotDeck, getCardImageUrl } from '../constants';
 import { Spread, TarotCard } from '../types';
 import CardFlip from '../components/CardFlip';
 import { interpretReading, continueReading } from '../services/geminiService';
+import { saveActiveSession, getActiveSession, clearActiveSession } from '../services/storage';
 import { 
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight, 
     HelpCircle, Eye, X, BookOpen, 
@@ -25,7 +26,7 @@ const Divination: React.FC = () => {
   const [isProtocolsOpen, setIsProtocolsOpen] = useState(false);
   
   // Selection Logic
-  const [pickedIndices, setPickedIndices] = useState<{cardId: number, isReversed: boolean}[]>([]);
+  const [pickedIndices, setPickedIndices] = useState<{cardId: number, isReversed: boolean, deckIndex?: number}[]>([]);
   const [drawnCards, setDrawnCards] = useState<{cardId: number, isReversed: boolean, positionId: number}[]>([]);
   const [revealedIndices, setRevealedIndices] = useState<number[]>([]);
   
@@ -38,7 +39,52 @@ const Divination: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [followUpText, setFollowUpText] = useState('');
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
+  
   const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // 核心修复：使用 isHydrated 确保数据加载完成前不触发自动清理或错误保存
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // 1. 初始化恢复会话：从本地存储加载之前的占卜状态
+  useEffect(() => {
+    const saved = getActiveSession();
+    if (saved) {
+      setStep(saved.step || 'select');
+      if (saved.selectedSpreadId) {
+        const spread = spreads.find(s => s.id === saved.selectedSpreadId);
+        setSelectedSpread(spread || null);
+      }
+      setQuestion(saved.question || '');
+      setPickedIndices(saved.pickedIndices || []);
+      setDrawnCards(saved.drawnCards || []);
+      setRevealedIndices(saved.revealedIndices || []);
+      setAiInterpretation(saved.aiInterpretation || '');
+      setChatHistory(saved.chatHistory || []);
+    }
+    setIsHydrated(true); // 标记加载完成
+  }, []);
+
+  // 2. 状态监听自动保存：仅在数据恢复完成后执行，防止初始状态覆盖掉旧数据
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    if (step === 'select') {
+      // 如果回到初始选择页，视为主动结束占卜，清除缓存
+      clearActiveSession();
+    } else {
+      // 实时保存占卜的每一个细节
+      saveActiveSession({
+        step,
+        selectedSpreadId: selectedSpread?.id,
+        question,
+        pickedIndices,
+        drawnCards,
+        revealedIndices,
+        aiInterpretation,
+        chatHistory
+      });
+    }
+  }, [isHydrated, step, selectedSpread, question, pickedIndices, drawnCards, revealedIndices, aiInterpretation, chatHistory]);
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,7 +110,7 @@ const Divination: React.FC = () => {
   const handlePickCard = (deckIndex: number) => {
     if (!selectedSpread || pickedIndices.length >= selectedSpread.positions.length) return;
     
-    const isAlreadyPicked = pickedIndices.some((p: any) => (p as any).deckIndex === deckIndex);
+    const isAlreadyPicked = pickedIndices.some((p: any) => p.deckIndex === deckIndex);
     if (isAlreadyPicked) return;
 
     const cardId = deckIndex; 
@@ -76,7 +122,7 @@ const Divination: React.FC = () => {
 
     if (newPicks.length === selectedSpread.positions.length) {
         setTimeout(() => {
-            const finalDrawn = newPicks.map((pick: any, i) => ({
+            const finalDrawn = newPicks.map((pick, i) => ({
                 cardId: pick.cardId,
                 isReversed: pick.isReversed,
                 positionId: selectedSpread.positions[i].id
@@ -111,7 +157,6 @@ const Divination: React.FC = () => {
     try {
         const result = await interpretReading(question, selectedSpread, cardsForAI);
         setAiInterpretation(result);
-        // 初始化对话历史
         setChatHistory([
             { role: 'user', parts: [{ text: `请解读牌阵。问题是：${question}` }] },
             { role: 'model', parts: [{ text: result }] }
@@ -151,14 +196,18 @@ const Divination: React.FC = () => {
   };
 
   const reset = () => {
-    setStep('select');
-    setQuestion('');
-    setPickedIndices([]);
-    setDrawnCards([]);
-    setRevealedIndices([]);
-    setAiInterpretation('');
-    setChatHistory([]);
-    setFollowUpText('');
+    if (window.confirm("确定要开启新的占卜吗？当前未保存的进度和对话历史将会清除。")) {
+      clearActiveSession();
+      setStep('select');
+      setQuestion('');
+      setSelectedSpread(null);
+      setPickedIndices([]);
+      setDrawnCards([]);
+      setRevealedIndices([]);
+      setAiInterpretation('');
+      setChatHistory([]);
+      setFollowUpText('');
+    }
   };
 
   return (
@@ -344,7 +393,7 @@ const Divination: React.FC = () => {
 
             <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-3 md:gap-4 p-8 md:p-12 glass-card rounded-[3.5rem] border-white/5 w-full mb-20 shadow-[0_0_120px_rgba(0,0,0,0.6)] relative overflow-hidden">
                 {Array.from({ length: 78 }).map((_, i) => {
-                    const isPicked = pickedIndices.some((p: any) => (p as any).deckIndex === i);
+                    const isPicked = pickedIndices.some((p: any) => p.deckIndex === i);
                     return (
                         <div 
                             key={i}
@@ -465,95 +514,87 @@ const Divination: React.FC = () => {
                       )}
                   </div>
 
-                  {revealedIndices.length < drawnCards.length ? (
-                      <div className="text-center py-24 border border-dashed border-white/5 rounded-[4rem] bg-white/[0.01] animate-pulse">
-                          <Eye size={48} className="mx-auto mb-6 text-slate-800" />
-                          <p className="text-slate-600 font-serif tracking-[0.5em] uppercase text-xs">翻开所有真相以开启解读</p>
-                      </div>
-                  ) : (
-                      <div className="space-y-12">
-                          {isLoadingAI && (
-                               <div className="text-center py-24 space-y-10">
-                                    <div className="relative w-28 h-28 mx-auto">
-                                        <div className="absolute inset-0 border border-purple-500/10 rounded-full animate-ping"></div>
-                                        <div className="absolute inset-0 border border-t-purple-500 rounded-full animate-spin"></div>
-                                        <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-400 w-12 h-12 animate-pulse" />
-                                    </div>
-                                    <div className="space-y-4">
-                                        <p className="text-purple-300 font-serif text-3xl tracking-[0.3em] animate-pulse uppercase">调阅阿卡纳档案...</p>
-                                        <p className="text-slate-600 text-[10px] uppercase tracking-[0.5em]">Synchronizing with Cosmic Matrix</p>
-                                    </div>
-                               </div>
-                          )}
+                  <div className="space-y-12">
+                      {isLoadingAI && (
+                           <div className="text-center py-24 space-y-10">
+                                <div className="relative w-28 h-28 mx-auto">
+                                    <div className="absolute inset-0 border border-purple-500/10 rounded-full animate-ping"></div>
+                                    <div className="absolute inset-0 border border-t-purple-500 rounded-full animate-spin"></div>
+                                    <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-400 w-12 h-12 animate-pulse" />
+                                </div>
+                                <div className="space-y-4">
+                                    <p className="text-purple-300 font-serif text-3xl tracking-[0.3em] animate-pulse uppercase">调阅阿卡纳档案...</p>
+                                    <p className="text-slate-600 text-[10px] uppercase tracking-[0.5em]">Synchronizing with Cosmic Matrix</p>
+                                </div>
+                           </div>
+                      )}
 
-                          {chatHistory.length > 0 && (
-                              <div className="space-y-10 animate-flip-in">
-                                  {chatHistory.filter(msg => msg.role === 'model' || msg.parts[0].text !== `请解读牌阵。问题是：${question}`).map((msg, msgIdx) => (
-                                      <div key={msgIdx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                          <div className={`max-w-[90%] md:max-w-[80%] rounded-[2.5rem] p-8 md:p-12 border ${
-                                              msg.role === 'user' 
-                                                ? 'bg-mystic- gold/5 border-mystic-gold/20 text-white rounded-br-none' 
-                                                : 'bg-black/30 border-white/5 text-slate-200 rounded-bl-none shadow-inner'
-                                          }`}>
-                                              {msg.role === 'user' && <div className="text-[10px] text-mystic-gold uppercase tracking-widest mb-4 opacity-60">你追问道</div>}
-                                              <div className="prose prose-invert prose-purple max-w-none text-lg font-light leading-relaxed whitespace-pre-wrap">
-                                                  {msg.parts[0].text}
-                                              </div>
+                      {chatHistory.length > 0 && (
+                          <div className="space-y-10 animate-flip-in">
+                              {chatHistory.filter(msg => msg.role === 'model' || msg.parts[0].text !== `请解读牌阵。问题是：${question}`).map((msg, msgIdx) => (
+                                  <div key={msgIdx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                      <div className={`max-w-[90%] md:max-w-[80%] rounded-[2.5rem] p-8 md:p-12 border ${
+                                          msg.role === 'user' 
+                                            ? 'bg-mystic-gold/5 border-mystic-gold/20 text-white rounded-br-none' 
+                                            : 'bg-black/30 border-white/5 text-slate-200 rounded-bl-none shadow-inner'
+                                      }`}>
+                                          {msg.role === 'user' && <div className="text-[10px] text-mystic-gold uppercase tracking-widest mb-4 opacity-60">你追问道</div>}
+                                          <div className="prose prose-invert prose-purple max-w-none text-lg font-light leading-relaxed whitespace-pre-wrap">
+                                              {msg.parts[0].text}
                                           </div>
                                       </div>
-                                  ))}
-                                  
-                                  {isSendingFollowUp && (
-                                      <div className="flex justify-start animate-pulse">
-                                          <div className="bg-black/20 border border-white/5 rounded-3xl p-6 flex items-center gap-3">
-                                              <div className="flex gap-1">
-                                                  <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce"></div>
-                                                  <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                                  <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                              </div>
-                                              <span className="text-[10px] text-slate-500 uppercase tracking-widest">感应中...</span>
-                                          </div>
-                                      </div>
-                                  )}
-
-                                  <div ref={chatEndRef} />
-
-                                  {/* Follow-up Input Box */}
-                                  <div className="mt-20 pt-12 border-t border-white/5 relative">
-                                      <div className="flex items-center gap-4 mb-6">
-                                          <div className="p-2 bg-mystic-gold/10 rounded-lg">
-                                              <MessageSquarePlus size={16} className="text-mystic-gold"/>
-                                          </div>
-                                          <h4 className="text-[10px] text-mystic-gold uppercase tracking-[0.4em] font-serif">深空对话 / 继续追问</h4>
-                                      </div>
-                                      
-                                      <div className="relative group">
-                                          <textarea 
-                                              value={followUpText}
-                                              onChange={(e) => setFollowUpText(e.target.value)}
-                                              onKeyDown={(e) => {
-                                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                                      e.preventDefault();
-                                                      handleSendFollowUp();
-                                                  }
-                                              }}
-                                              placeholder="关于这个解读，你还有什么想要深入了解的吗？"
-                                              className="w-full bg-black/40 border border-white/10 p-8 pr-20 rounded-3xl text-white focus:outline-none focus:border-mystic-gold/40 min-h-[120px] transition-all shadow-inner text-lg font-light placeholder-slate-700 resize-none"
-                                          />
-                                          <button 
-                                              onClick={handleSendFollowUp}
-                                              disabled={!followUpText.trim() || isSendingFollowUp}
-                                              className="absolute bottom-6 right-6 p-4 bg-mystic-gold text-mystic-950 rounded-2xl disabled:opacity-20 hover:scale-105 active:scale-95 transition-all shadow-lg"
-                                          >
-                                              <Send size={20} />
-                                          </button>
-                                      </div>
-                                      <p className="mt-4 text-[9px] text-slate-600 uppercase tracking-widest text-center italic">你可以询问细节，如：“这张逆位的牌对我意味着什么？”或“未来的阻碍具体是什么？”</p>
                                   </div>
+                              ))}
+                              
+                              {isSendingFollowUp && (
+                                  <div className="flex justify-start animate-pulse">
+                                      <div className="bg-black/20 border border-white/5 rounded-3xl p-6 flex items-center gap-3">
+                                          <div className="flex gap-1">
+                                              <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce"></div>
+                                              <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                              <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                          </div>
+                                          <span className="text-[10px] text-slate-500 uppercase tracking-widest">感应中...</span>
+                                      </div>
+                                  </div>
+                              )}
+
+                              <div ref={chatEndRef} />
+
+                              <div className="mt-20 pt-12 border-t border-white/5 relative">
+                                  <div className="flex items-center gap-4 mb-6">
+                                      <div className="p-2 bg-mystic-gold/10 rounded-lg">
+                                          <MessageSquarePlus size={16} className="text-mystic-gold"/>
+                                      </div>
+                                      <h4 className="text-[10px] text-mystic-gold uppercase tracking-[0.4em] font-serif">深空对话 / 继续追问</h4>
+                                  </div>
+                                  
+                                  <div className="relative group">
+                                      <textarea 
+                                          value={followUpText}
+                                          onChange={(e) => setFollowUpText(e.target.value)}
+                                          onKeyDown={(e) => {
+                                              if (e.key === 'Enter' && !e.shiftKey) {
+                                                  e.preventDefault();
+                                                  handleSendFollowUp();
+                                              }
+                                          }}
+                                          placeholder="关于这个解读，你还有什么想要深入了解的吗？"
+                                          className="w-full bg-black/40 border border-white/10 p-8 pr-20 rounded-3xl text-white focus:outline-none focus:border-mystic-gold/40 min-h-[120px] transition-all shadow-inner text-lg font-light placeholder-slate-700 resize-none"
+                                      />
+                                      <button 
+                                          onClick={handleSendFollowUp}
+                                          disabled={!followUpText.trim() || isSendingFollowUp}
+                                          className="absolute bottom-6 right-6 p-4 bg-mystic-gold text-mystic-950 rounded-2xl disabled:opacity-20 hover:scale-105 active:scale-95 transition-all shadow-lg"
+                                      >
+                                          <Send size={20} />
+                                      </button>
+                                  </div>
+                                  <p className="mt-4 text-[9px] text-slate-600 uppercase tracking-widest text-center italic">你可以询问细节，如：“这张逆位的牌对我意味着什么？”或“未来的阻碍具体是什么？”</p>
                               </div>
-                          )}
-                      </div>
-                  )}
+                          </div>
+                      )}
+                  </div>
               </div>
           </div>
       )}

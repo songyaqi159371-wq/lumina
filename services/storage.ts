@@ -1,10 +1,12 @@
+
 import { UserProgress, DivinationResult } from '../types';
 
 const KEYS = {
   PROGRESS: 'lumina_progress',
   HISTORY: 'lumina_history',
   NOTES: 'lumina_notes',
-  SETTINGS: 'lumina_settings'
+  SETTINGS: 'lumina_settings',
+  ACTIVE_SESSION: 'lumina_active_session'
 };
 
 const INITIAL_PROGRESS: UserProgress = {
@@ -60,6 +62,25 @@ export const deleteHistoryItem = (id: string) => {
   const history = getHistory();
   const newHistory = history.filter(item => item.id !== id);
   localStorage.setItem(KEYS.HISTORY, JSON.stringify(newHistory));
+};
+
+// --- Active Session Management ---
+
+export const saveActiveSession = (data: any) => {
+  localStorage.setItem(KEYS.ACTIVE_SESSION, JSON.stringify(data));
+};
+
+export const getActiveSession = (): any | null => {
+  try {
+    const stored = localStorage.getItem(KEYS.ACTIVE_SESSION);
+    return stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const clearActiveSession = () => {
+  localStorage.removeItem(KEYS.ACTIVE_SESSION);
 };
 
 export const getNote = (cardId: number): string => {
