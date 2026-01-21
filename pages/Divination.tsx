@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { spreads, tarotDeck, getCardImageUrl } from '../constants';
 import { Spread, TarotCard } from '../types';
 import CardFlip from '../components/CardFlip';
@@ -42,7 +42,7 @@ const Divination: React.FC = () => {
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   
-  // 核心修复：使用 isHydrated 确保数据加载完成前不触发自动清理或错误保存
+  // 核心修复：状态锁，确保数据加载完成前不触发自动清理或错误保存
   const [isHydrated, setIsHydrated] = useState(false);
 
   // 1. 初始化恢复会话：从本地存储加载之前的占卜状态
@@ -61,10 +61,10 @@ const Divination: React.FC = () => {
       setAiInterpretation(saved.aiInterpretation || '');
       setChatHistory(saved.chatHistory || []);
     }
-    setIsHydrated(true); // 标记加载完成
+    setIsHydrated(true); 
   }, []);
 
-  // 2. 状态监听自动保存：仅在数据恢复完成后执行，防止初始状态覆盖掉旧数据
+  // 2. 状态监听自动保存：仅在数据恢复完成后执行
   useEffect(() => {
     if (!isHydrated) return;
 
@@ -147,6 +147,9 @@ const Divination: React.FC = () => {
   const handleAIRequest = async () => {
     if (!selectedSpread) return;
     setIsLoadingAI(true);
+    // 重置状态以支持重新生成
+    setAiInterpretation('');
+    setChatHistory([]);
     
     const cardsForAI = drawnCards.map(d => ({
         card: tarotDeck.find(c => c.id === d.cardId)!,
@@ -195,20 +198,20 @@ const Divination: React.FC = () => {
     }
   };
 
-  const reset = () => {
-    if (window.confirm("确定要开启新的占卜吗？当前未保存的进度和对话历史将会清除。")) {
-      clearActiveSession();
-      setStep('select');
-      setQuestion('');
-      setSelectedSpread(null);
-      setPickedIndices([]);
-      setDrawnCards([]);
-      setRevealedIndices([]);
-      setAiInterpretation('');
-      setChatHistory([]);
-      setFollowUpText('');
-    }
-  };
+  const reset = useCallback(() => {
+    clearActiveSession();
+    setStep('select');
+    setSelectedSpread(null);
+    setQuestion('');
+    setPickedIndices([]);
+    setDrawnCards([]);
+    setRevealedIndices([]);
+    setAiInterpretation('');
+    setChatHistory([]);
+    setFollowUpText('');
+    setDetailedCard(null);
+    setIsLoadingAI(false);
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto min-h-[80vh] pb-20 px-4 relative">
@@ -502,16 +505,39 @@ const Divination: React.FC = () => {
                           </div>
                       </div>
                       
-                      {!aiInterpretation && (
-                        <button 
-                            onClick={handleAIRequest}
-                            disabled={isLoadingAI || revealedIndices.length < drawnCards.length}
-                            className="group px-12 py-6 bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-20 text-white rounded-[2.5rem] transition-all shadow-2xl shadow-purple-950/50 font-bold flex items-center gap-4 active:scale-95"
-                        >
-                            {isLoadingAI ? '正在同步高维智慧...' : '生成 AI 深度解读'}
-                            {!isLoadingAI && <Sparkles size={20} className="animate-pulse" />}
-                        </button>
-                      )}
+                      <div className="flex gap-4">
+                        {!aiInterpretation && !isLoadingAI && (
+                          <button 
+                              onClick={handleAIRequest}
+                              disabled={isLoadingAI || revealedIndices.length < drawnCards.length}
+                              className="group px-12 py-6 bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-20 text-white rounded-[2.5rem] transition-all shadow-2xl shadow-purple-950/50 font-bold flex items-center gap-4 active:scale-95"
+                          >
+                              生成 AI 深度解读
+                              <Sparkles size={20} className="animate-pulse" />
+                          </button>
+                        )}
+                        {aiInterpretation && !isLoadingAI && (
+                          <div className="relative group">
+                            <button 
+                                onClick={handleAIRequest}
+                                className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95"
+                            >
+                                <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 重新生成
+                            </button>
+                            {/* 优化后的自定义悬浮提示 - 现在位于下方 */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-6 w-80 p-6 bg-slate-950 border border-mystic-gold/40 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,1)] opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 -translate-y-4 group-hover:translate-y-0 z-[100] ring-1 ring-white/10">
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 border-8 border-transparent border-b-slate-950"></div>
+                                <div className="flex items-center gap-3 mb-3 border-b border-white/10 pb-2">
+                                    <Info size={16} className="text-mystic-gold shrink-0" />
+                                    <span className="text-[10px] text-mystic-gold font-bold uppercase tracking-widest">使用建议</span>
+                                </div>
+                                <div className="text-sm text-amber-100 leading-relaxed text-left font-light">
+                                    此功能主要用于应对网络异常造成的生成中断。塔罗占卜贵在“初念”，如无特殊情况，建议以<span className="text-mystic-gold font-bold">首次感应</span>的结果为准。
+                                </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                   </div>
 
                   <div className="space-y-12">
