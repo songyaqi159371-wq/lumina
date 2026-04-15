@@ -1,5 +1,5 @@
 
-import { UserProgress, DivinationResult } from '../types';
+import { UserProgress, DivinationResult, AppSettings, ReadingStyle } from '../types';
 
 const KEYS = {
   PROGRESS: 'lumina_progress',
@@ -14,6 +14,11 @@ const INITIAL_PROGRESS: UserProgress = {
   dailyDraw: { date: '', cardId: null, isReversed: false, note: '' },
   streak: 0,
   lastLogin: ''
+};
+
+const DEFAULT_SETTINGS: AppSettings = {
+  readingStyle: ReadingStyle.Natural,
+  showCardMeanings: true
 };
 
 // Request browser persistence
@@ -54,8 +59,25 @@ export const getHistory = (): DivinationResult[] => {
 
 export const saveHistory = (record: DivinationResult) => {
   const history = getHistory();
-  history.unshift(record);
+  // Check if it already exists (to avoid duplicates if saved multiple times)
+  const existingIndex = history.findIndex(item => item.id === record.id);
+  if (existingIndex !== -1) {
+    history[existingIndex] = record;
+  } else {
+    history.unshift(record);
+  }
   localStorage.setItem(KEYS.HISTORY, JSON.stringify(history));
+};
+
+export const updateHistoryItem = (id: string, updatedRecord: Partial<DivinationResult>) => {
+  const history = getHistory();
+  const index = history.findIndex(item => item.id === id);
+  if (index !== -1) {
+    history[index] = { ...history[index], ...updatedRecord };
+    localStorage.setItem(KEYS.HISTORY, JSON.stringify(history));
+    return true;
+  }
+  return false;
 };
 
 export const deleteHistoryItem = (id: string) => {
@@ -100,6 +122,19 @@ export const saveNote = (cardId: number, content: string) => {
   } catch (e) {
     console.error("Failed to save note", e);
   }
+};
+
+export const getSettings = (): AppSettings => {
+  try {
+    const stored = localStorage.getItem(KEYS.SETTINGS);
+    return stored ? JSON.parse(stored) : DEFAULT_SETTINGS;
+  } catch (e) {
+    return DEFAULT_SETTINGS;
+  }
+};
+
+export const saveSettings = (settings: AppSettings) => {
+  localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
 };
 
 // --- Quick Sync (Base64) ---

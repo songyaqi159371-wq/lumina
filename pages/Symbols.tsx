@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { tarotSymbols } from '../constants';
+import { tarotSymbols, getCardImageUrl } from '../constants';
 import { TarotSymbol } from '../types';
 import { 
     Search, Book, ChevronLeft, Sparkles, Wind, Shield, Cloud, 
@@ -143,12 +143,49 @@ const Symbols: React.FC = () => {
 
                         <div className="bg-black/20 rounded-2xl p-8 border border-mystic-700/50">
                             <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
-                                <Sparkles size={16} /> 占卜中的应用逻辑
+                                <span className="w-8 h-px bg-indigo-400/30"></span> 占卜中的应用逻辑
                             </h3>
                             <div className="text-slate-300 leading-relaxed font-sans text-md italic space-y-4">
                                 {selectedSymbol.integrationAdvice}
                             </div>
                         </div>
+
+                        {/* 具体案例解析 (Merged) */}
+                        {selectedSymbol.details && selectedSymbol.details.length > 0 && (
+                            <div className="mt-12">
+                                <h3 className="text-sm font-bold text-mystic-gold uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                                    <span className="w-8 h-px bg-mystic-gold/30"></span> 具体案例解析
+                                </h3>
+                                <div className="grid grid-cols-1 gap-8">
+                                    {selectedSymbol.details.map((detail, idx) => {
+                                        const cardName = detail.cardName;
+                                        const cardId = detail.cardId;
+                                        const imageUrl = detail.imageUrl || (cardId !== undefined ? getCardImageUrl(cardId) : '');
+                                        
+                                        return (
+                                            <div key={idx} className="flex flex-col md:flex-row gap-6 bg-black/20 rounded-2xl p-6 border border-mystic-700/30 hover:border-mystic-gold/20 transition-colors group">
+                                                <div className="w-full md:w-32 flex-shrink-0">
+                                                    <div className="aspect-[2/3.5] rounded-xl overflow-hidden border border-mystic-700 shadow-lg group-hover:border-mystic-gold/40 transition-colors">
+                                                        <img 
+                                                            src={imageUrl} 
+                                                            alt={cardName}
+                                                            className="w-full h-full object-cover"
+                                                            referrerPolicy="no-referrer"
+                                                        />
+                                                    </div>
+                                                    <p className="text-center mt-2 text-xs text-mystic-gold font-serif">{cardName}</p>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="whitespace-pre-wrap text-slate-300 leading-relaxed font-light text-md">
+                                                        {detail.interpretation}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                         
                         <footer className="pt-8 border-t border-mystic-800 text-xs text-slate-500 font-light flex justify-between items-center italic">
                             <span>Source: The Secret Language of Tarot</span>

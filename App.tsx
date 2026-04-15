@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Learn from './pages/Learn';
 import Symbols from './pages/Symbols';
 import Divination from './pages/Divination';
+import History from './pages/History';
 import Practice from './pages/Practice';
 import { initStorage } from './services/storage';
 
@@ -21,6 +22,7 @@ const App: React.FC = () => {
           <Route path="/learn" element={<Learn />} />
           <Route path="/symbols" element={<Symbols />} />
           <Route path="/divine" element={<Divination />} />
+          <Route path="/history" element={<History />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

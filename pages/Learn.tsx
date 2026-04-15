@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Filter, X, ChevronLeft, ChevronRight, Check, Download, Upload, Save } from 'lucide-react';
-import { tarotDeck, getCardImageUrl } from '../constants';
+import { Search, Filter, X, ChevronLeft, ChevronRight, Check, Download, Upload, Save, Trash2, Info, Sparkles } from 'lucide-react';
+import { tarotDeck, getCardImageUrl, tarotSymbols } from '../constants';
 import { Suit, TarotCard } from '../types';
 import { saveNote, getNote, getProgress, saveProgress, exportData, importData } from '../services/storage';
+import { motion, AnimatePresence } from 'motion/react';
+import { Link } from 'react-router-dom';
 
 const Learn: React.FC = () => {
   const location = useLocation();
@@ -14,6 +16,19 @@ const Learn: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<TarotCard | null>(null);
   const [userNote, setUserNote] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+
+  // Modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   
   // Calculate filtered cards
   const filteredCards = tarotDeck.filter(card => {
@@ -95,21 +110,24 @@ const Learn: React.FC = () => {
       const file = e.target.files?.[0];
       if (!file) return;
       
-      if (window.confirm("⚠️ 导入数据将覆盖当前的所有笔记和进度，确定要继续吗？")) {
+      setConfirmModal({
+        isOpen: true,
+        title: '导入数据',
+        message: '⚠️ 导入数据将覆盖当前的所有笔记和进度，确定要继续吗？',
+        onConfirm: async () => {
           try {
               await importData(file);
-              alert("✅ 笔记数据已恢复！");
-              
               // Refresh note if card is currently open
               if (selectedCard) {
                   setUserNote(getNote(selectedCard.id));
               }
           } catch (error) {
-              alert("❌ 恢复失败，文件格式错误");
+              console.error("Import failed", error);
           }
-      }
-      // Reset input
-      if (fileInputRef.current) fileInputRef.current.value = '';
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      });
   };
 
   return (
@@ -194,6 +212,7 @@ const Learn: React.FC = () => {
                 <img 
                     src={getCardImageUrl(card.id)} 
                     alt={card.nameEn} 
+                    referrerPolicy="no-referrer"
                     loading="lazy"
                     className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300"
                 />
@@ -245,6 +264,7 @@ const Learn: React.FC = () => {
                         <img 
                             key={selectedCard.id} // Force re-render image
                             src={getCardImageUrl(selectedCard.id)} 
+                            referrerPolicy="no-referrer"
                             className="w-full h-full object-contain drop-shadow-2xl"
                             alt={selectedCard.nameEn} 
                         />
@@ -287,6 +307,55 @@ const Learn: React.FC = () => {
                             <p className="text-slate-400 text-sm leading-relaxed">{selectedCard.description}</p>
                         </div>
 
+                        {/* Symbols in this card */}
+                        {selectedCard.symbols && selectedCard.symbols.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-mystic-gold flex items-center gap-2 uppercase tracking-wider">
+                                    <Sparkles size={16} /> 关键元素解析
+                                </h3>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {selectedCard.symbols.map(symbolId => {
+                                        const symbol = tarotSymbols.find(s => s.id === symbolId);
+                                        if (!symbol) return null;
+                                        
+                                        const cardExplanation = symbol.details.find(
+                                            exp => exp.cardName === selectedCard.nameCn || exp.cardName === selectedCard.nameEn
+                                        );
+
+                                        return (
+                                            <div key={symbolId} className="p-4 bg-mystic-800/40 rounded-xl border border-mystic-700 hover:border-mystic-500 transition-all group">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg">✦</span>
+                                                        <h4 className="text-mystic-200 font-bold">{symbol.nameCn} <span className="text-xs font-normal text-slate-500 ml-1">{symbol.nameEn}</span></h4>
+                                                    </div>
+                                                    <Link 
+                                                        to={`/symbols?search=${symbol.nameCn}`}
+                                                        className="text-[10px] text-mystic-400 hover:text-mystic-gold flex items-center gap-1 transition-colors"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        查看百科 <Info size={10} />
+                                                    </Link>
+                                                </div>
+                                                
+                                                {cardExplanation ? (
+                                                    <div className="space-y-2">
+                                                        <p className="text-xs text-slate-300 leading-relaxed">
+                                                            {cardExplanation.interpretation}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-slate-400 italic">
+                                                        {symbol.generalMeaning}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Notes Section with Auto-save */}
                         <div className="bg-mystic-800/50 p-4 rounded-xl border border-mystic-700 mt-4 transition-colors focus-within:border-mystic-500 focus-within:bg-mystic-800">
                             <div className="flex justify-between items-center mb-2">
@@ -315,6 +384,49 @@ const Learn: React.FC = () => {
             </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl"
+            >
+              <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center mb-6">
+                <Trash2 className="text-amber-400" size={24} />
+              </div>
+              <h3 className="text-xl text-white font-medium mb-2">{confirmModal.title}</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-8">
+                {confirmModal.message}
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="flex-1 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-slate-300 hover:text-white transition"
+                >
+                  取消
+                </button>
+                <button 
+                  onClick={confirmModal.onConfirm}
+                  className="flex-1 px-6 py-3 bg-amber-500 hover:bg-amber-600 rounded-xl text-sm text-white font-medium transition shadow-lg shadow-amber-500/20"
+                >
+                  确认
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -4,14 +4,15 @@ import { spreads, tarotDeck, getCardImageUrl } from '../constants';
 import { Spread, TarotCard } from '../types';
 import CardFlip from '../components/CardFlip';
 import { interpretReading, continueReading } from '../services/geminiService';
-import { saveActiveSession, getActiveSession, clearActiveSession } from '../services/storage';
+import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveHistory, getHistory, updateHistoryItem } from '../services/storage';
 import { 
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight, 
     HelpCircle, Eye, X, BookOpen, 
     Info, ShieldAlert,
     Compass, Zap, Globe, MessageSquarePlus, Send,
     ChevronDown, Ban,
-    ShieldCheck, MapPin, UserCheck
+    ShieldCheck, MapPin, UserCheck,
+    Feather, Cpu, Save, CheckCircle2
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -19,11 +20,25 @@ interface ChatMessage {
     parts: { text: string }[];
 }
 
+// Fisher-Yates Shuffle Algorithm
+const shuffleArray = (array: number[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
+
 const Divination: React.FC = () => {
   const [step, setStep] = useState<'select' | 'input' | 'drawing' | 'result'>('select');
+  const [sessionId, setSessionId] = useState<string>(() => `divine-${Date.now()}`);
   const [selectedSpread, setSelectedSpread] = useState<Spread | null>(null);
   const [question, setQuestion] = useState('');
   const [isProtocolsOpen, setIsProtocolsOpen] = useState(false);
+  
+  // 新增：记录洗牌后的卡片索引顺序
+  const [shuffledDeck, setShuffledDeck] = useState<number[]>([]);
   
   // Selection Logic
   const [pickedIndices, setPickedIndices] = useState<{cardId: number, isReversed: boolean, deckIndex?: number}[]>([]);
@@ -34,6 +49,7 @@ const Divination: React.FC = () => {
   const [aiInterpretation, setAiInterpretation] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [detailedCard, setDetailedCard] = useState<TarotCard | null>(null);
+  const [readingStyle, setReadingStyle] = useState(getSettings().readingStyle);
   
   // Chat/Follow-up State
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -41,15 +57,15 @@ const Divination: React.FC = () => {
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
-  
-  // 核心修复：状态锁，确保数据加载完成前不触发自动清理或错误保存
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
-  // 1. 初始化恢复会话：从本地存储加载之前的占卜状态
+  // 1. 初始化恢复会话
   useEffect(() => {
     const saved = getActiveSession();
     if (saved) {
       setStep(saved.step || 'select');
+      setSessionId(saved.sessionId || `divine-${Date.now()}`);
       if (saved.selectedSpreadId) {
         const spread = spreads.find(s => s.id === saved.selectedSpreadId);
         setSelectedSpread(spread || null);
@@ -60,31 +76,32 @@ const Divination: React.FC = () => {
       setRevealedIndices(saved.revealedIndices || []);
       setAiInterpretation(saved.aiInterpretation || '');
       setChatHistory(saved.chatHistory || []);
+      setShuffledDeck(saved.shuffledDeck || []);
     }
     setIsHydrated(true); 
   }, []);
 
-  // 2. 状态监听自动保存：仅在数据恢复完成后执行
+  // 2. 状态监听自动保存
   useEffect(() => {
     if (!isHydrated) return;
 
     if (step === 'select') {
-      // 如果回到初始选择页，视为主动结束占卜，清除缓存
       clearActiveSession();
     } else {
-      // 实时保存占卜的每一个细节
       saveActiveSession({
         step,
+        sessionId,
         selectedSpreadId: selectedSpread?.id,
         question,
         pickedIndices,
         drawnCards,
         revealedIndices,
         aiInterpretation,
-        chatHistory
+        chatHistory,
+        shuffledDeck // 同时也保存随机后的牌序，防止刷新页面导致牌序重排
       });
     }
-  }, [isHydrated, step, selectedSpread, question, pickedIndices, drawnCards, revealedIndices, aiInterpretation, chatHistory]);
+  }, [isHydrated, step, sessionId, selectedSpread, question, pickedIndices, drawnCards, revealedIndices, aiInterpretation, chatHistory, shuffledDeck]);
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,20 +120,24 @@ const Divination: React.FC = () => {
 
   const startDrawing = () => {
     if (!question.trim()) return;
+    
+    // 在进入抽牌环节前进行彻底洗牌
+    const initialDeck = Array.from({ length: 78 }, (_, i) => i);
+    setShuffledDeck(shuffleArray(initialDeck));
+    
     setPickedIndices([]);
     setStep('drawing');
   };
 
-  const handlePickCard = (deckIndex: number) => {
+  const handlePickCard = (deckIndex: number, actualCardId: number) => {
     if (!selectedSpread || pickedIndices.length >= selectedSpread.positions.length) return;
     
     const isAlreadyPicked = pickedIndices.some((p: any) => p.deckIndex === deckIndex);
     if (isAlreadyPicked) return;
 
-    const cardId = deckIndex; 
-    const isReversed = Math.random() > 0.35;
+    const isReversed = Math.random() > 0.5;
 
-    const newPick = { cardId, isReversed, deckIndex };
+    const newPick = { cardId: actualCardId, isReversed, deckIndex };
     const newPicks = [...pickedIndices, newPick];
     setPickedIndices(newPicks);
 
@@ -147,7 +168,6 @@ const Divination: React.FC = () => {
   const handleAIRequest = async () => {
     if (!selectedSpread) return;
     setIsLoadingAI(true);
-    // 重置状态以支持重新生成
     setAiInterpretation('');
     setChatHistory([]);
     
@@ -158,7 +178,7 @@ const Divination: React.FC = () => {
     }));
 
     try {
-        const result = await interpretReading(question, selectedSpread, cardsForAI);
+        const result = await interpretReading(question, selectedSpread, cardsForAI, readingStyle);
         setAiInterpretation(result);
         setChatHistory([
             { role: 'user', parts: [{ text: `请解读牌阵。问题是：${question}` }] },
@@ -186,11 +206,18 @@ const Divination: React.FC = () => {
     setChatHistory(updatedHistory);
 
     try {
-        const responseText = await continueReading(chatHistory, userMsg);
-        setChatHistory(prev => [
-            ...prev,
+        const responseText = await continueReading(updatedHistory, readingStyle);
+        const finalHistory: ChatMessage[] = [
+            ...updatedHistory,
             { role: 'model', parts: [{ text: responseText }] }
-        ]);
+        ];
+        setChatHistory(finalHistory);
+        
+        // If already saved to history, update it automatically
+        const history = getHistory();
+        if (history.some(item => item.id === sessionId)) {
+            updateHistoryItem(sessionId, { chatHistory: finalHistory });
+        }
     } catch (error) {
         console.error(error);
     } finally {
@@ -201,6 +228,7 @@ const Divination: React.FC = () => {
   const reset = useCallback(() => {
     clearActiveSession();
     setStep('select');
+    setSessionId(`divine-${Date.now()}`);
     setSelectedSpread(null);
     setQuestion('');
     setPickedIndices([]);
@@ -211,7 +239,28 @@ const Divination: React.FC = () => {
     setFollowUpText('');
     setDetailedCard(null);
     setIsLoadingAI(false);
+    setShuffledDeck([]);
+    setIsSaved(false);
   }, []);
+
+  const handleSaveResult = () => {
+    if (!selectedSpread || drawnCards.length === 0) return;
+    
+    const record = {
+      id: sessionId,
+      date: new Date().toISOString(),
+      question,
+      spreadId: selectedSpread.id,
+      cards: drawnCards,
+      aiInterpretation,
+      chatHistory,
+      readingStyle
+    };
+    
+    saveHistory(record);
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 3000);
+  };
 
   return (
     <div className="max-w-7xl mx-auto min-h-[80vh] pb-20 px-4 relative">
@@ -395,12 +444,12 @@ const Divination: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-3 md:gap-4 p-8 md:p-12 glass-card rounded-[3.5rem] border-white/5 w-full mb-20 shadow-[0_0_120px_rgba(0,0,0,0.6)] relative overflow-hidden">
-                {Array.from({ length: 78 }).map((_, i) => {
+                {shuffledDeck.map((actualCardId, i) => {
                     const isPicked = pickedIndices.some((p: any) => p.deckIndex === i);
                     return (
                         <div 
                             key={i}
-                            onClick={() => handlePickCard(i)}
+                            onClick={() => handlePickCard(i, actualCardId)}
                             className={`
                                 relative aspect-[2/3] w-full rounded-lg border border-white/5 transition-all duration-700 cursor-pointer
                                 ${isPicked 
@@ -436,9 +485,27 @@ const Divination: React.FC = () => {
                         <span className="text-lg italic text-slate-300 font-light tracking-wide">“{question}”</span>
                     </div>
                   </div>
-                  <button onClick={reset} className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95">
-                      <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 开启新占卜
-                  </button>
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <button 
+                        onClick={handleSaveResult} 
+                        className={`flex items-center gap-3 px-8 py-4 border rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition group active:scale-95 ${
+                            isSaved ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                        }`}
+                    >
+                        {isSaved ? (
+                            <>
+                                <CheckCircle2 size={14} className="text-emerald-400" /> 已保存
+                            </>
+                        ) : (
+                            <>
+                                <Save size={14} className="group-hover:scale-110 transition-transform" /> 保存占卜
+                            </>
+                        )}
+                    </button>
+                    <button onClick={reset} className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95">
+                        <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 开启新占卜
+                    </button>
+                  </div>
               </header>
 
               <div className="mb-32">
@@ -506,6 +573,28 @@ const Divination: React.FC = () => {
                       </div>
                       
                       <div className="flex gap-4">
+                        {aiInterpretation && (
+                          <div className="flex bg-black/40 rounded-2xl border border-white/5 p-1 mr-4">
+                            {[
+                              { id: 'Natural', icon: Globe, label: '自然' },
+                              { id: 'Mystic', icon: Sparkles, label: '神秘' },
+                              { id: 'Psychological', icon: BrainCircuit, label: '心理' },
+                              { id: 'Direct', icon: Zap, label: '直白' },
+                              { id: 'Poetic', icon: Feather, label: '诗意' },
+                              { id: 'Cyberpunk', icon: Cpu, label: '赛博' }
+                            ].map(s => (
+                              <button
+                                key={s.id}
+                                onClick={() => setReadingStyle(s.id as any)}
+                                className={`px-3 py-2 rounded-xl flex items-center gap-2 transition-all ${readingStyle === s.id ? 'bg-mystic-gold text-mystic-950 shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                                title={s.label}
+                              >
+                                <s.icon size={14} />
+                                <span className="text-[10px] font-bold uppercase hidden md:inline">{s.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         {!aiInterpretation && !isLoadingAI && (
                           <button 
                               onClick={handleAIRequest}
@@ -524,7 +613,6 @@ const Divination: React.FC = () => {
                             >
                                 <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 重新生成
                             </button>
-                            {/* 优化后的自定义悬浮提示 - 现在位于下方 */}
                             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-6 w-80 p-6 bg-slate-950 border border-mystic-gold/40 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,1)] opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 -translate-y-4 group-hover:translate-y-0 z-[100] ring-1 ring-white/10">
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 border-8 border-transparent border-b-slate-950"></div>
                                 <div className="flex items-center gap-3 mb-3 border-b border-white/10 pb-2">
@@ -637,7 +725,7 @@ const Divination: React.FC = () => {
                 </button>
                 <div className="md:w-5/12 bg-black flex-shrink-0 h-[40vh] md:h-auto border-b md:border-b-0 md:border-r border-white/5">
                     <div className="w-full h-full flex items-center justify-center p-12">
-                        <img src={getCardImageUrl(detailedCard.id)} className="w-full h-full object-contain drop-shadow-2xl" alt={detailedCard.nameEn} />
+                        <img src={getCardImageUrl(detailedCard.id)} referrerPolicy="no-referrer" className="w-full h-full object-contain drop-shadow-2xl" alt={detailedCard.nameEn} />
                     </div>
                 </div>
                 <div className="md:w-7/12 p-12 md:p-16 overflow-y-auto flex-1 bg-mystic-900 custom-scrollbar">

@@ -26,9 +26,12 @@ export interface TarotSymbol {
   nameEn: string;
   category: 'Nature' | 'Artifact' | 'Divine';
   generalMeaning: string;
+  imageUrl?: string;
   details: {
+    cardId: number;
     cardName: string;
     interpretation: string;
+    imageUrl?: string;
   }[];
   integrationAdvice: string;
 }
@@ -70,6 +73,11 @@ export interface DivinationResult {
   }[];
   notes?: string;
   aiInterpretation?: string;
+  chatHistory?: {
+    role: 'user' | 'model';
+    parts: { text: string }[];
+  }[];
+  readingStyle?: ReadingStyle;
 }
 
 export interface CaseStudy {
@@ -81,4 +89,18 @@ export interface CaseStudy {
   isReversed: boolean;
   interpretation: string;
   keyPoints: string[];
+}
+
+export enum ReadingStyle {
+  Mystic = 'Mystic',
+  Psychological = 'Psychological',
+  Direct = 'Direct',
+  Poetic = 'Poetic',
+  Cyberpunk = 'Cyberpunk',
+  Natural = 'Natural'
+}
+
+export interface AppSettings {
+  readingStyle: ReadingStyle;
+  showCardMeanings: boolean;
 }

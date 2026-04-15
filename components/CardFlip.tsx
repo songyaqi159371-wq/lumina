@@ -52,6 +52,7 @@ const CardFlip: React.FC<CardFlipProps> = ({
                <img 
                  src={imgSrc} 
                  alt={card.nameEn}
+                 referrerPolicy="no-referrer"
                  className="w-full h-full object-cover saturate-[0.85] contrast-[1.1]"
                  loading="lazy"
                />
