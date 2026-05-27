@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Home, Menu, X, Feather, Sparkle, Eye, Lightbulb, History } from 'lucide-react';
+import { BookOpen, Home, Menu, X, Feather, Sparkle, Eye, History } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,7 +16,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/symbols', label: '象征', icon: Sparkle },
     { path: '/divine', label: '占卜', icon: Eye },
     { path: '/history', label: '档案', icon: History },
-    { path: '/practice', label: '练习', icon: Lightbulb },
   ];
 
   return (
