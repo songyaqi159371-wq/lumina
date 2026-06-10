@@ -1,5 +1,5 @@
 
-import { UserProgress, DivinationResult, AppSettings, ReadingStyle } from '../types';
+import { UserProgress, DivinationResult, AppSettings, ReadingStyle, AIModel } from '../types';
 
 const KEYS = {
   PROGRESS: 'lumina_progress',
@@ -18,7 +18,8 @@ const INITIAL_PROGRESS: UserProgress = {
 
 const DEFAULT_SETTINGS: AppSettings = {
   readingStyle: ReadingStyle.Natural,
-  showCardMeanings: true
+  showCardMeanings: true,
+  aiModel: AIModel.Gemini
 };
 
 // Request browser persistence

@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { spreads, tarotDeck, getCardImageUrl } from '../constants';
 import { Spread, TarotCard } from '../types';
 import CardFlip from '../components/CardFlip';
-import { interpretReading, continueReading } from '../services/geminiService';
+import { getAIProvider } from '../services/aiProviderFactory';
+import { ChatMessage } from '../services/aiProvider';
 import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveHistory, getHistory, updateHistoryItem } from '../services/storage';
 import { 
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight, 
@@ -15,10 +16,6 @@ import {
     Feather, Cpu, Save, CheckCircle2
 } from 'lucide-react';
 
-interface ChatMessage {
-    role: 'user' | 'model';
-    parts: { text: string }[];
-}
 
 // Fisher-Yates Shuffle Algorithm
 const shuffleArray = (array: number[]) => {
@@ -178,7 +175,8 @@ const Divination: React.FC = () => {
     }));
 
     try {
-        const result = await interpretReading(question, selectedSpread, cardsForAI, readingStyle);
+        const provider = getAIProvider(getSettings().aiModel);
+        const result = await provider.interpretReading(question, selectedSpread, cardsForAI, readingStyle);
         setAiInterpretation(result);
         setChatHistory([
             { role: 'user', parts: [{ text: `请解读牌阵。问题是：${question}` }] },
@@ -206,7 +204,8 @@ const Divination: React.FC = () => {
     setChatHistory(updatedHistory);
 
     try {
-        const responseText = await continueReading(updatedHistory, readingStyle);
+        const provider = getAIProvider(getSettings().aiModel);
+        const responseText = await provider.continueReading(updatedHistory, readingStyle);
         const finalHistory: ChatMessage[] = [
             ...updatedHistory,
             { role: 'model', parts: [{ text: responseText }] }

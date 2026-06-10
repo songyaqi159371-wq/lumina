@@ -100,7 +100,18 @@ export enum ReadingStyle {
   Natural = 'Natural'
 }
 
+export enum AIModel {
+  Gemini = 'gemini',
+  DeepSeek = 'deepseek',
+  Kimi = 'kimi',
+  Qwen = 'qwen',
+  Doubao = 'doubao',
+  Claude = 'claude',
+  OpenAI = 'openai',
+}
+
 export interface AppSettings {
   readingStyle: ReadingStyle;
   showCardMeanings: boolean;
+  aiModel: AIModel;
 }
