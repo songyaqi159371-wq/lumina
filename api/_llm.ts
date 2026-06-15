@@ -19,6 +19,7 @@ export function checkRateLimit(req: VercelRequest): boolean {
 }
 
 export type ChatMsg = { role: 'user' | 'model'; parts: { text: string }[] };
+type OpenAIMsg = { role: string; content: string };
 
 // ── Gemini ──
 async function geminiInterpret(prompt: string, systemInstruction: string): Promise<string> {
@@ -42,24 +43,59 @@ async function geminiChat(history: ChatMsg[], newMessage: string, systemInstruct
   return r.text ?? '';
 }
 
-// ── DeepSeek (OpenAI-compatible) ──
-async function deepseekChat(messages: { role: string; content: string }[]): Promise<string> {
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
+// ── OpenAI-compatible models (DeepSeek / Kimi / Qwen / Doubao / OpenAI) ──
+interface OpenAICompatConfig {
+  baseURL: string;
+  model: string;
+  apiKey: string | undefined;
+}
+
+const OPENAI_COMPAT: Record<string, OpenAICompatConfig> = {
+  deepseek: { baseURL: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat', apiKey: process.env.DEEPSEEK_API_KEY },
+  kimi: { baseURL: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k', apiKey: process.env.KIMI_API_KEY },
+  qwen: { baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus', apiKey: process.env.QWEN_API_KEY },
+  doubao: { baseURL: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: process.env.DOUBAO_MODEL ?? 'doubao-pro-32k', apiKey: process.env.DOUBAO_API_KEY },
+  openai: { baseURL: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o', apiKey: process.env.OPENAI_API_KEY },
+};
+
+async function openaiCompatChat(cfg: OpenAICompatConfig, messages: OpenAIMsg[]): Promise<string> {
+  const res = await fetch(cfg.baseURL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${cfg.apiKey}`,
     },
-    body: JSON.stringify({ model: 'deepseek-chat', messages }),
+    body: JSON.stringify({ model: cfg.model, messages }),
   });
-  if (!res.ok) throw new Error(`DeepSeek API ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`${cfg.model} API ${res.status}: ${await res.text()}`);
   const data = await res.json();
   return data.choices?.[0]?.message?.content ?? '';
 }
 
+// ── Claude (Anthropic format) ──
+async function claudeChat(systemInstruction: string, messages: OpenAIMsg[]): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.CLAUDE_API_KEY ?? '',
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: systemInstruction,
+      messages: messages.filter(m => m.role !== 'system'),
+    }),
+  });
+  if (!res.ok) throw new Error(`Claude API ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return data.content?.[0]?.text ?? '';
+}
+
 // Convert Gemini-style history to OpenAI messages
-function toOpenAIMessages(systemInstruction: string, history: ChatMsg[], newMessage: string) {
-  const msgs: { role: string; content: string }[] = [{ role: 'system', content: systemInstruction }];
+function toOpenAIMessages(systemInstruction: string, history: ChatMsg[], newMessage: string): OpenAIMsg[] {
+  const msgs: OpenAIMsg[] = [{ role: 'system', content: systemInstruction }];
   for (const h of history ?? []) {
     msgs.push({ role: h.role === 'model' ? 'assistant' : 'user', content: h.parts[0]?.text ?? '' });
   }
@@ -69,8 +105,11 @@ function toOpenAIMessages(systemInstruction: string, history: ChatMsg[], newMess
 
 // ── Unified entry points (routed by model) ──
 export async function runInterpret(model: string, prompt: string, systemInstruction: string): Promise<string> {
-  if (model === 'deepseek') {
-    return deepseekChat([
+  if (model === 'claude') {
+    return claudeChat(systemInstruction, [{ role: 'user', content: prompt }]);
+  }
+  if (OPENAI_COMPAT[model]) {
+    return openaiCompatChat(OPENAI_COMPAT[model], [
       { role: 'system', content: systemInstruction },
       { role: 'user', content: prompt },
     ]);
@@ -84,8 +123,11 @@ export async function runChat(
   newMessage: string,
   systemInstruction: string
 ): Promise<string> {
-  if (model === 'deepseek') {
-    return deepseekChat(toOpenAIMessages(systemInstruction, history, newMessage));
+  if (model === 'claude') {
+    return claudeChat(systemInstruction, toOpenAIMessages(systemInstruction, history, newMessage));
+  }
+  if (OPENAI_COMPAT[model]) {
+    return openaiCompatChat(OPENAI_COMPAT[model], toOpenAIMessages(systemInstruction, history, newMessage));
   }
   return geminiChat(history, newMessage, systemInstruction);
 }

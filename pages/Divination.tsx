@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { spreads, tarotDeck, getCardImageUrl } from '../constants';
-import { Spread, TarotCard } from '../types';
+import { Spread, TarotCard, AIModel } from '../types';
 import CardFlip from '../components/CardFlip';
 import { getAIProvider } from '../services/aiProviderFactory';
 import { ChatMessage } from '../services/aiProvider';
-import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveHistory, getHistory, updateHistoryItem } from '../services/storage';
+import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveSettings, saveHistory, getHistory, updateHistoryItem } from '../services/storage';
 import { 
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight, 
     HelpCircle, Eye, X, BookOpen, 
@@ -47,6 +47,12 @@ const Divination: React.FC = () => {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [detailedCard, setDetailedCard] = useState<TarotCard | null>(null);
   const [readingStyle, setReadingStyle] = useState(getSettings().readingStyle);
+  const [aiModel, setAiModel] = useState(getSettings().aiModel);
+
+  const handleModelChange = (model: AIModel) => {
+    setAiModel(model);
+    saveSettings({ ...getSettings(), aiModel: model });
+  };
   
   // Chat/Follow-up State
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -175,7 +181,7 @@ const Divination: React.FC = () => {
     }));
 
     try {
-        const provider = getAIProvider(getSettings().aiModel);
+        const provider = getAIProvider(aiModel);
         const result = await provider.interpretReading(question, selectedSpread, cardsForAI, readingStyle);
         setAiInterpretation(result);
         setChatHistory([
@@ -204,7 +210,7 @@ const Divination: React.FC = () => {
     setChatHistory(updatedHistory);
 
     try {
-        const provider = getAIProvider(getSettings().aiModel);
+        const provider = getAIProvider(aiModel);
         const responseText = await provider.continueReading(updatedHistory, readingStyle);
         const finalHistory: ChatMessage[] = [
             ...updatedHistory,
@@ -595,14 +601,32 @@ const Divination: React.FC = () => {
                           </div>
                         )}
                         {!aiInterpretation && !isLoadingAI && (
-                          <button 
-                              onClick={handleAIRequest}
-                              disabled={isLoadingAI || revealedIndices.length < drawnCards.length}
-                              className="group px-12 py-6 bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-20 text-white rounded-[2.5rem] transition-all shadow-2xl shadow-purple-950/50 font-bold flex items-center gap-4 active:scale-95"
-                          >
-                              生成 AI 深度解读
-                              <Sparkles size={20} className="animate-pulse" />
-                          </button>
+                          <div className="flex flex-col items-stretch gap-3">
+                            <div className="flex items-center gap-2 justify-center">
+                              <Cpu size={12} className="text-slate-500 shrink-0" />
+                              <select
+                                value={aiModel}
+                                onChange={(e) => handleModelChange(e.target.value as AIModel)}
+                                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-slate-300 font-bold uppercase tracking-widest focus:outline-none focus:border-mystic-gold/40 cursor-pointer"
+                              >
+                                <option value={AIModel.Gemini}>Gemini</option>
+                                <option value={AIModel.DeepSeek}>DeepSeek</option>
+                                <option value={AIModel.Kimi}>Kimi</option>
+                                <option value={AIModel.Qwen}>通义千问</option>
+                                <option value={AIModel.Doubao}>豆包</option>
+                                <option value={AIModel.Claude}>Claude</option>
+                                <option value={AIModel.OpenAI}>OpenAI</option>
+                              </select>
+                            </div>
+                            <button
+                                onClick={handleAIRequest}
+                                disabled={isLoadingAI || revealedIndices.length < drawnCards.length}
+                                className="group px-12 py-6 bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-20 text-white rounded-[2.5rem] transition-all shadow-2xl shadow-purple-950/50 font-bold flex items-center gap-4 active:scale-95 justify-center"
+                            >
+                                生成 AI 深度解读
+                                <Sparkles size={20} className="animate-pulse" />
+                            </button>
+                          </div>
                         )}
                         {aiInterpretation && !isLoadingAI && (
                           <div className="relative group">
