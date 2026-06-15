@@ -13,7 +13,7 @@ import {
     Compass, Zap, Globe, MessageSquarePlus, Send,
     ChevronDown, Ban,
     ShieldCheck, MapPin, UserCheck,
-    Feather, Cpu, Save, CheckCircle2
+    Feather, Cpu, Save, CheckCircle2, SlidersHorizontal
 } from 'lucide-react';
 
 
@@ -48,6 +48,7 @@ const Divination: React.FC = () => {
   const [detailedCard, setDetailedCard] = useState<TarotCard | null>(null);
   const [readingStyle, setReadingStyle] = useState(getSettings().readingStyle);
   const [aiModel, setAiModel] = useState(getSettings().aiModel);
+  const [showStyleSelector, setShowStyleSelector] = useState(false);
 
   const handleModelChange = (model: AIModel) => {
     setAiModel(model);
@@ -577,47 +578,62 @@ const Divination: React.FC = () => {
                           </div>
                       </div>
                       
-                      <div className="flex gap-4">
+                      <div className="flex flex-wrap items-start gap-4 justify-end">
+                        {/* 常驻模型选择器 */}
+                        <div className="flex items-center gap-2 bg-black/40 rounded-2xl border border-white/5 px-3 py-2">
+                          <Cpu size={14} className="text-mystic-gold/60 shrink-0" />
+                          <select
+                            value={aiModel}
+                            onChange={(e) => handleModelChange(e.target.value as AIModel)}
+                            className="bg-transparent text-[11px] text-slate-300 font-bold uppercase tracking-widest focus:outline-none cursor-pointer [&>option]:bg-slate-900"
+                          >
+                            <option value={AIModel.Gemini}>Gemini</option>
+                            <option value={AIModel.DeepSeek}>DeepSeek</option>
+                            <option value={AIModel.Kimi}>Kimi</option>
+                            <option value={AIModel.Qwen}>通义千问</option>
+                            <option value={AIModel.Doubao}>豆包</option>
+                            <option value={AIModel.Claude}>Claude</option>
+                            <option value={AIModel.OpenAI}>OpenAI</option>
+                          </select>
+                        </div>
+
+                        {/* 风格选择器：折叠在"解读风格"入口后 */}
                         {aiInterpretation && (
-                          <div className="flex bg-black/40 rounded-2xl border border-white/5 p-1 mr-4">
-                            {[
-                              { id: 'Natural', icon: Globe, label: '自然' },
-                              { id: 'Mystic', icon: Sparkles, label: '神秘' },
-                              { id: 'Psychological', icon: BrainCircuit, label: '心理' },
-                              { id: 'Direct', icon: Zap, label: '直白' },
-                              { id: 'Poetic', icon: Feather, label: '诗意' },
-                              { id: 'Cyberpunk', icon: Cpu, label: '赛博' }
-                            ].map(s => (
-                              <button
-                                key={s.id}
-                                onClick={() => setReadingStyle(s.id as any)}
-                                className={`px-3 py-2 rounded-xl flex items-center gap-2 transition-all ${readingStyle === s.id ? 'bg-mystic-gold text-mystic-950 shadow-lg' : 'text-slate-500 hover:text-white'}`}
-                                title={s.label}
-                              >
-                                <s.icon size={14} />
-                                <span className="text-[10px] font-bold uppercase hidden md:inline">{s.label}</span>
-                              </button>
-                            ))}
+                          <div className="relative">
+                            <button
+                              onClick={() => setShowStyleSelector(v => !v)}
+                              className="flex items-center gap-2 px-4 py-2.5 bg-black/40 rounded-2xl border border-white/5 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition"
+                            >
+                              <SlidersHorizontal size={14} />
+                              <span className="hidden md:inline">解读风格</span>
+                              <ChevronDown size={14} className={`transition-transform ${showStyleSelector ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showStyleSelector && (
+                              <div className="absolute top-full right-0 mt-3 flex flex-wrap gap-1 bg-slate-950 rounded-2xl border border-white/10 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[90] w-56">
+                                {[
+                                  { id: 'Natural', icon: Globe, label: '自然' },
+                                  { id: 'Mystic', icon: Sparkles, label: '神秘' },
+                                  { id: 'Psychological', icon: BrainCircuit, label: '心理' },
+                                  { id: 'Direct', icon: Zap, label: '直白' },
+                                  { id: 'Poetic', icon: Feather, label: '诗意' },
+                                  { id: 'Cyberpunk', icon: Cpu, label: '赛博' }
+                                ].map(s => (
+                                  <button
+                                    key={s.id}
+                                    onClick={() => setReadingStyle(s.id as any)}
+                                    className={`px-3 py-2 rounded-xl flex items-center gap-2 transition-all ${readingStyle === s.id ? 'bg-mystic-gold text-mystic-950 shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                                    title={s.label}
+                                  >
+                                    <s.icon size={14} />
+                                    <span className="text-[10px] font-bold uppercase">{s.label}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
+
                         {!aiInterpretation && !isLoadingAI && (
-                          <div className="flex flex-col items-stretch gap-3">
-                            <div className="flex items-center gap-2 justify-center">
-                              <Cpu size={12} className="text-slate-500 shrink-0" />
-                              <select
-                                value={aiModel}
-                                onChange={(e) => handleModelChange(e.target.value as AIModel)}
-                                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-[11px] text-slate-300 font-bold uppercase tracking-widest focus:outline-none focus:border-mystic-gold/40 cursor-pointer"
-                              >
-                                <option value={AIModel.Gemini}>Gemini</option>
-                                <option value={AIModel.DeepSeek}>DeepSeek</option>
-                                <option value={AIModel.Kimi}>Kimi</option>
-                                <option value={AIModel.Qwen}>通义千问</option>
-                                <option value={AIModel.Doubao}>豆包</option>
-                                <option value={AIModel.Claude}>Claude</option>
-                                <option value={AIModel.OpenAI}>OpenAI</option>
-                              </select>
-                            </div>
                             <button
                                 onClick={handleAIRequest}
                                 disabled={isLoadingAI || revealedIndices.length < drawnCards.length}
@@ -626,7 +642,6 @@ const Divination: React.FC = () => {
                                 生成 AI 深度解读
                                 <Sparkles size={20} className="animate-pulse" />
                             </button>
-                          </div>
                         )}
                         {aiInterpretation && !isLoadingAI && (
                           <div className="relative group">
