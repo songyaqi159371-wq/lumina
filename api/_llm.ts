@@ -78,7 +78,6 @@ async function openaiCompatChat(cfg: OpenAICompatConfig, messages: OpenAIMsg[]):
 
 // ── Claude (Anthropic format) ──
 async function claudeChat(systemInstruction: string, messages: OpenAIMsg[]): Promise<string> {
-  console.log('[DEBUG] ANTHROPIC_BASE_URL:', process.env.ANTHROPIC_BASE_URL, '| AUTH_TOKEN exists:', !!process.env.ANTHROPIC_AUTH_TOKEN);
   const baseUrl = (process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com').replace(/\/+$/, '');
   const res = await fetch(`${baseUrl}/v1/messages`, {
     method: 'POST',
