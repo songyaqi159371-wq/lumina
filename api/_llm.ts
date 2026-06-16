@@ -52,7 +52,7 @@ interface OpenAICompatConfig {
 
 const OPENAI_COMPAT: Record<string, OpenAICompatConfig> = {
   deepseek: { baseURL: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat', apiKey: process.env.DEEPSEEK_API_KEY },
-  kimi: { baseURL: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k', apiKey: process.env.KIMI_API_KEY },
+  kimi: { baseURL: 'https://api.moonshot.cn/v1/chat/completions', model: process.env.KIMI_MODEL ?? 'moonshot-v1-32k', apiKey: process.env.KIMI_API_KEY },
   qwen: { baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus', apiKey: process.env.QWEN_API_KEY },
   doubao: { baseURL: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: process.env.DOUBAO_MODEL ?? 'doubao-pro-32k', apiKey: process.env.DOUBAO_API_KEY },
   openai: { baseURL: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o', apiKey: process.env.OPENAI_API_KEY },
