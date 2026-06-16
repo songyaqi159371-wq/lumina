@@ -56,7 +56,7 @@ const OPENAI_COMPAT: Record<string, OpenAICompatConfig> = {
   qwen: { baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: process.env.QWEN_MODEL ?? 'qwen-plus', apiKey: process.env.QWEN_API_KEY },
   doubao: { baseURL: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: process.env.DOUBAO_MODEL ?? 'doubao-pro-32k', apiKey: process.env.DOUBAO_API_KEY },
   openai: {
-    baseURL: process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1/chat/completions',
+    baseURL: `${(process.env.OPENAI_BASE_URL ?? 'https://api.openai.com').replace(/\/+$/, '')}/v1/chat/completions`,
     model: process.env.OPENAI_MODEL ?? 'gpt-5.5',
     apiKey: process.env.OPENAI_API_KEY,
   },
