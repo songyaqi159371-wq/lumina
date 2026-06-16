@@ -57,7 +57,7 @@ const OPENAI_COMPAT: Record<string, OpenAICompatConfig> = {
   doubao: { baseURL: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: process.env.DOUBAO_MODEL ?? 'doubao-pro-32k', apiKey: process.env.DOUBAO_API_KEY },
   openai: {
     baseURL: process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1/chat/completions',
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    model: process.env.OPENAI_MODEL ?? 'gpt-5.5',
     apiKey: process.env.OPENAI_API_KEY,
   },
 };
@@ -78,15 +78,17 @@ async function openaiCompatChat(cfg: OpenAICompatConfig, messages: OpenAIMsg[]):
 
 // ── Claude (Anthropic format) ──
 async function claudeChat(systemInstruction: string, messages: OpenAIMsg[]): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  console.log('[DEBUG] ANTHROPIC_BASE_URL:', process.env.ANTHROPIC_BASE_URL, '| AUTH_TOKEN exists:', !!process.env.ANTHROPIC_AUTH_TOKEN);
+  const baseUrl = (process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com').replace(/\/+$/, '');
+  const res = await fetch(`${baseUrl}/v1/messages`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.CLAUDE_API_KEY ?? '',
+      'x-api-key': process.env.ANTHROPIC_AUTH_TOKEN ?? process.env.CLAUDE_API_KEY ?? '',
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6',
+      model: process.env.CLAUDE_MODEL ?? 'claude-opus-4-8',
       max_tokens: 4096,
       system: systemInstruction,
       messages: messages.filter(m => m.role !== 'system'),
@@ -115,9 +117,9 @@ export async function runInterpret(model: string, prompt: string, systemInstruct
     const modelUsed = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
     if (process.env.CLAUDE_USE_OPENAI_FORMAT === 'true') {
       const cfg: OpenAICompatConfig = {
-        baseURL: process.env.CLAUDE_BASE_URL ?? 'https://api.anthropic.com/v1/chat/completions',
+        baseURL: process.env.CLAUDE_BASE_URL ?? `${(process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com').replace(/\/+$/, '')}/v1/chat/completions`,
         model: modelUsed,
-        apiKey: process.env.CLAUDE_API_KEY,
+        apiKey: process.env.ANTHROPIC_AUTH_TOKEN ?? process.env.CLAUDE_API_KEY,
       };
       const text = await openaiCompatChat(cfg, [
         { role: 'system', content: systemInstruction },
@@ -150,9 +152,9 @@ export async function runChat(
     const modelUsed = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
     if (process.env.CLAUDE_USE_OPENAI_FORMAT === 'true') {
       const cfg: OpenAICompatConfig = {
-        baseURL: process.env.CLAUDE_BASE_URL ?? 'https://api.anthropic.com/v1/chat/completions',
+        baseURL: process.env.CLAUDE_BASE_URL ?? `${(process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com').replace(/\/+$/, '')}/v1/chat/completions`,
         model: modelUsed,
-        apiKey: process.env.CLAUDE_API_KEY,
+        apiKey: process.env.ANTHROPIC_AUTH_TOKEN ?? process.env.CLAUDE_API_KEY,
       };
       const text = await openaiCompatChat(cfg, toOpenAIMessages(systemInstruction, history, newMessage));
       return { text, modelUsed };
