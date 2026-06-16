@@ -104,17 +104,24 @@ function toOpenAIMessages(systemInstruction: string, history: ChatMsg[], newMess
 }
 
 // ── Unified entry points (routed by model) ──
-export async function runInterpret(model: string, prompt: string, systemInstruction: string): Promise<string> {
+export interface LLMResult { text: string; modelUsed: string; }
+
+export async function runInterpret(model: string, prompt: string, systemInstruction: string): Promise<LLMResult> {
   if (model === 'claude') {
-    return claudeChat(systemInstruction, [{ role: 'user', content: prompt }]);
+    const modelUsed = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
+    const text = await claudeChat(systemInstruction, [{ role: 'user', content: prompt }]);
+    return { text, modelUsed };
   }
   if (OPENAI_COMPAT[model]) {
-    return openaiCompatChat(OPENAI_COMPAT[model], [
+    const cfg = OPENAI_COMPAT[model];
+    const text = await openaiCompatChat(cfg, [
       { role: 'system', content: systemInstruction },
       { role: 'user', content: prompt },
     ]);
+    return { text, modelUsed: cfg.model };
   }
-  return geminiInterpret(prompt, systemInstruction);
+  const text = await geminiInterpret(prompt, systemInstruction);
+  return { text, modelUsed: 'gemini-2.0-flash' };
 }
 
 export async function runChat(
@@ -122,12 +129,17 @@ export async function runChat(
   history: ChatMsg[],
   newMessage: string,
   systemInstruction: string
-): Promise<string> {
+): Promise<LLMResult> {
   if (model === 'claude') {
-    return claudeChat(systemInstruction, toOpenAIMessages(systemInstruction, history, newMessage));
+    const modelUsed = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
+    const text = await claudeChat(systemInstruction, toOpenAIMessages(systemInstruction, history, newMessage));
+    return { text, modelUsed };
   }
   if (OPENAI_COMPAT[model]) {
-    return openaiCompatChat(OPENAI_COMPAT[model], toOpenAIMessages(systemInstruction, history, newMessage));
+    const cfg = OPENAI_COMPAT[model];
+    const text = await openaiCompatChat(cfg, toOpenAIMessages(systemInstruction, history, newMessage));
+    return { text, modelUsed: cfg.model };
   }
-  return geminiChat(history, newMessage, systemInstruction);
+  const text = await geminiChat(history, newMessage, systemInstruction);
+  return { text, modelUsed: 'gemini-2.0-flash' };
 }

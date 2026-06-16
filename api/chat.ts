@@ -12,8 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!newMessage) return res.status(400).json({ error: 'Missing newMessage' });
 
   try {
-    const text = await runChat(model ?? 'gemini', history ?? [], newMessage, systemInstruction ?? '');
-    res.status(200).json({ text });
+    const result = await runChat(model ?? 'gemini', history ?? [], newMessage, systemInstruction ?? '');
+    res.status(200).json({ text: result.text, modelUsed: result.modelUsed });
   } catch (err: any) {
     console.error('chat error:', err);
     res.status(500).json({ error: err.message ?? 'Internal error' });

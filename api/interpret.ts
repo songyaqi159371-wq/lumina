@@ -12,8 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
 
   try {
-    const text = await runInterpret(model ?? 'gemini', prompt, systemInstruction ?? '');
-    res.status(200).json({ text });
+    const result = await runInterpret(model ?? 'gemini', prompt, systemInstruction ?? '');
+    res.status(200).json({ text: result.text, modelUsed: result.modelUsed });
   } catch (err: any) {
     console.error('interpret error:', err);
     res.status(500).json({ error: err.message ?? 'Internal error' });
