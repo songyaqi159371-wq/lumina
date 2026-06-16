@@ -53,9 +53,13 @@ interface OpenAICompatConfig {
 const OPENAI_COMPAT: Record<string, OpenAICompatConfig> = {
   deepseek: { baseURL: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat', apiKey: process.env.DEEPSEEK_API_KEY },
   kimi: { baseURL: 'https://api.moonshot.cn/v1/chat/completions', model: process.env.KIMI_MODEL ?? 'moonshot-v1-32k', apiKey: process.env.KIMI_API_KEY },
-  qwen: { baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus', apiKey: process.env.QWEN_API_KEY },
+  qwen: { baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: process.env.QWEN_MODEL ?? 'qwen-plus', apiKey: process.env.QWEN_API_KEY },
   doubao: { baseURL: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: process.env.DOUBAO_MODEL ?? 'doubao-pro-32k', apiKey: process.env.DOUBAO_API_KEY },
-  openai: { baseURL: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o', apiKey: process.env.OPENAI_API_KEY },
+  openai: {
+    baseURL: process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1/chat/completions',
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    apiKey: process.env.OPENAI_API_KEY,
+  },
 };
 
 async function openaiCompatChat(cfg: OpenAICompatConfig, messages: OpenAIMsg[]): Promise<string> {
@@ -109,6 +113,18 @@ export interface LLMResult { text: string; modelUsed: string; }
 export async function runInterpret(model: string, prompt: string, systemInstruction: string): Promise<LLMResult> {
   if (model === 'claude') {
     const modelUsed = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
+    if (process.env.CLAUDE_USE_OPENAI_FORMAT === 'true') {
+      const cfg: OpenAICompatConfig = {
+        baseURL: process.env.CLAUDE_BASE_URL ?? 'https://api.anthropic.com/v1/chat/completions',
+        model: modelUsed,
+        apiKey: process.env.CLAUDE_API_KEY,
+      };
+      const text = await openaiCompatChat(cfg, [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: prompt },
+      ]);
+      return { text, modelUsed };
+    }
     const text = await claudeChat(systemInstruction, [{ role: 'user', content: prompt }]);
     return { text, modelUsed };
   }
@@ -132,6 +148,15 @@ export async function runChat(
 ): Promise<LLMResult> {
   if (model === 'claude') {
     const modelUsed = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
+    if (process.env.CLAUDE_USE_OPENAI_FORMAT === 'true') {
+      const cfg: OpenAICompatConfig = {
+        baseURL: process.env.CLAUDE_BASE_URL ?? 'https://api.anthropic.com/v1/chat/completions',
+        model: modelUsed,
+        apiKey: process.env.CLAUDE_API_KEY,
+      };
+      const text = await openaiCompatChat(cfg, toOpenAIMessages(systemInstruction, history, newMessage));
+      return { text, modelUsed };
+    }
     const text = await claudeChat(systemInstruction, toOpenAIMessages(systemInstruction, history, newMessage));
     return { text, modelUsed };
   }
