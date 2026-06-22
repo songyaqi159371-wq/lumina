@@ -2,14 +2,10 @@ name = "lumina-tarot"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
 
-[site]
-bucket = "./dist"
+# Cloudflare Pages 配置
+# 环境变量需要在 Cloudflare Dashboard 中设置，或使用 wrangler pages secret 命令
 
-# 环境变量配置（在 Cloudflare Dashboard 中设置实际值）
-[vars]
-# 这些是公开的变量，敏感信息请使用 Cloudflare Dashboard 的 Environment Variables
-
-# 下面的 API Keys 需要在 Cloudflare Dashboard 中设置为加密的 secrets：
+# 下面的 API Keys 需要在 Cloudflare Dashboard 中设置为加密的 Environment Variables：
 # - GEMINI_API_KEY
 # - DEEPSEEK_API_KEY
 # - KIMI_API_KEY
