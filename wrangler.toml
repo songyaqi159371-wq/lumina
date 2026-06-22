@@ -1,0 +1,29 @@
+name = "lumina-tarot"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[site]
+bucket = "./dist"
+
+# 环境变量配置（在 Cloudflare Dashboard 中设置实际值）
+[vars]
+# 这些是公开的变量，敏感信息请使用 Cloudflare Dashboard 的 Environment Variables
+
+# 下面的 API Keys 需要在 Cloudflare Dashboard 中设置为加密的 secrets：
+# - GEMINI_API_KEY
+# - DEEPSEEK_API_KEY
+# - KIMI_API_KEY
+# - KIMI_MODEL
+# - QWEN_API_KEY
+# - QWEN_MODEL
+# - DOUBAO_API_KEY
+# - DOUBAO_MODEL
+# - OPENAI_API_KEY
+# - OPENAI_MODEL
+# - OPENAI_BASE_URL
+# - ANTHROPIC_AUTH_TOKEN
+# - CLAUDE_API_KEY
+# - CLAUDE_MODEL
+# - CLAUDE_BASE_URL
+# - CLAUDE_USE_OPENAI_FORMAT
+# - ANTHROPIC_BASE_URL

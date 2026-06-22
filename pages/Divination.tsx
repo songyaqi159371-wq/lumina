@@ -174,21 +174,35 @@ const Divination: React.FC = () => {
     setIsLoadingAI(true);
     setAiInterpretation('');
     setChatHistory([]);
-    
+
     const cardsForAI = drawnCards.map(d => ({
         card: tarotDeck.find(c => c.id === d.cardId)!,
         isReversed: d.isReversed,
         positionName: selectedSpread.positions.find(p => p.id === d.positionId)?.name || '未知'
     }));
 
+    const userMsg: ChatMessage = { role: 'user', parts: [{ text: `请解读牌阵。问题是：${question}` }] };
+
     try {
         const provider = getAIProvider(aiModel);
-        const result = await provider.interpretReading(question, selectedSpread, cardsForAI, readingStyle);
+        let acc = '';
+        let started = false;
+        const onDelta = (chunk: string) => {
+            acc += chunk;
+            // 首块到达即关闭 loading 动画，开始打字机式渲染
+            if (!started) {
+                started = true;
+                setIsLoadingAI(false);
+                setChatHistory([userMsg, { role: 'model', parts: [{ text: acc }] }]);
+            } else {
+                setChatHistory([userMsg, { role: 'model', parts: [{ text: acc }] }]);
+            }
+            setAiInterpretation(acc);
+        };
+        const result = await provider.interpretReadingStream(question, selectedSpread, cardsForAI, readingStyle, onDelta);
+        // 收尾：以最终全文为准（兼容回退到非流式、或部分块丢失的情况）
         setAiInterpretation(result);
-        setChatHistory([
-            { role: 'user', parts: [{ text: `请解读牌阵。问题是：${question}` }] },
-            { role: 'model', parts: [{ text: result }] }
-        ]);
+        setChatHistory([userMsg, { role: 'model', parts: [{ text: result }] }]);
     } catch (e) {
         console.error(e);
         setAiInterpretation("解读过程中遇到了一些波折，请检查网络连接或稍后再试。");
@@ -212,13 +226,24 @@ const Divination: React.FC = () => {
 
     try {
         const provider = getAIProvider(aiModel);
-        const responseText = await provider.continueReading(updatedHistory, readingStyle);
+        let acc = '';
+        let started = false;
+        const onDelta = (chunk: string) => {
+            acc += chunk;
+            // 首块到达即停止"感应中"动画，开始打字机式渲染助手回复
+            if (!started) {
+                started = true;
+                setIsSendingFollowUp(false);
+            }
+            setChatHistory([...updatedHistory, { role: 'model', parts: [{ text: acc }] }]);
+        };
+        const responseText = await provider.continueReadingStream(updatedHistory, readingStyle, onDelta);
         const finalHistory: ChatMessage[] = [
             ...updatedHistory,
             { role: 'model', parts: [{ text: responseText }] }
         ];
         setChatHistory(finalHistory);
-        
+
         // If already saved to history, update it automatically
         const history = getHistory();
         if (history.some(item => item.id === sessionId)) {

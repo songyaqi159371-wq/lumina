@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "cf:dev": "wrangler pages dev dist --port 3000",
+    "cf:deploy": "npm run build && wrangler pages deploy dist --project-name=lumina-tarot",
+    "cf:tail": "wrangler pages deployment tail"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
@@ -23,6 +26,7 @@
     "@vercel/node": "^5.8.14",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "wrangler": "^3.0.0"
   }
 }
