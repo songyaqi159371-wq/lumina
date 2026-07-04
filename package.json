@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "cf:dev": "wrangler pages dev dist --port 3000",
-    "cf:deploy": "npm run build && wrangler pages deploy dist --project-name=lumina-tarot",
+    "cf:deploy": "npm run build && wrangler pages deploy dist --project-name=lumina",
     "cf:tail": "wrangler pages deployment tail"
   },
   "dependencies": {

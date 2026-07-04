@@ -145,7 +145,7 @@ export async function onRequestPost(context: any) {
       const baseURL = `${(env.OPENAI_BASE_URL || 'https://api.openai.com').replace(/\/+$/, '')}/v1/chat/completions`;
       const cfg: OpenAICompatConfig = {
         baseURL,
-        model: env.OPENAI_MODEL || 'gpt-4',
+        model: env.OPENAI_MODEL || 'gpt-5.5',
         apiKey: env.OPENAI_API_KEY,
       };
       text = await openaiCompatChat(cfg, toOpenAIMessages(systemInstruction || '', history || [], newMessage));

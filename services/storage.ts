@@ -19,7 +19,8 @@ const INITIAL_PROGRESS: UserProgress = {
 const DEFAULT_SETTINGS: AppSettings = {
   readingStyle: ReadingStyle.Natural,
   showCardMeanings: true,
-  aiModel: AIModel.Gemini
+  // 默认模型：Gemini 已在页面上隐藏，改用 DeepSeek 作为默认（恢复 Gemini 时可改回）
+  aiModel: AIModel.DeepSeek
 };
 
 // Request browser persistence

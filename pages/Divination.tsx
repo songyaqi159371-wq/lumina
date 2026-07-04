@@ -507,19 +507,19 @@ const Divination: React.FC = () => {
       {/* Step 4: Result Display */}
       {step === 'result' && (
           <div className="animate-flip-in">
-              <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8 glass-card p-12 rounded-[3.5rem] border-white/5">
-                  <div className="space-y-4">
+              <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-20 gap-6 md:gap-8 glass-card p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] border-white/5">
+                  <div className="space-y-3 md:space-y-4">
                     <span className="text-[10px] text-mystic-gold uppercase tracking-[0.6em] block opacity-60 font-serif">Revelation of Arcana</span>
-                    <h1 className="text-5xl font-serif text-white tracking-tighter uppercase">{selectedSpread?.name}</h1>
-                    <div className="flex items-center gap-4 px-6 py-3 bg-black/40 rounded-3xl border border-white/5 w-fit shadow-inner">
-                        <HelpCircle size={16} className="text-mystic-gold" />
-                        <span className="text-lg italic text-slate-300 font-light tracking-wide">“{question}”</span>
+                    <h1 className="text-3xl md:text-5xl font-serif text-white tracking-tighter uppercase">{selectedSpread?.name}</h1>
+                    <div className="flex items-center gap-3 md:gap-4 px-4 md:px-6 py-2.5 md:py-3 bg-black/40 rounded-2xl border border-white/5 w-fit shadow-inner">
+                        <HelpCircle size={16} className="text-mystic-gold shrink-0" />
+                        <span className="text-sm md:text-lg italic text-slate-300 font-light tracking-wide">“{question}”</span>
                     </div>
                   </div>
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <button 
-                        onClick={handleSaveResult} 
-                        className={`flex items-center gap-3 px-8 py-4 border rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition group active:scale-95 ${
+                  <div className="flex flex-row gap-3 md:gap-4 w-full md:w-auto">
+                    <button
+                        onClick={handleSaveResult}
+                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 border rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition group active:scale-95 ${
                             isSaved ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                         }`}
                     >
@@ -533,51 +533,51 @@ const Divination: React.FC = () => {
                             </>
                         )}
                     </button>
-                    <button onClick={reset} className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95">
+                    <button onClick={reset} className="flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95">
                         <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 开启新占卜
                     </button>
                   </div>
               </header>
 
-              <div className="mb-32">
-                  <div className="flex flex-wrap justify-center gap-10 md:gap-20">
+              <div className="mb-20 md:mb-32">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-center gap-x-4 gap-y-10 md:gap-10 lg:gap-20">
                       {drawnCards.map((draw, index) => {
                           const card = tarotDeck.find(c => c.id === draw.cardId);
                           const position = selectedSpread?.positions.find(p => p.id === draw.positionId);
                           const isRevealed = revealedIndices.includes(index);
 
                           return (
-                              <div key={index} className="flex flex-col items-center space-y-8 animate-flip-in" style={{ animationDelay: `${index * 150}ms` }}>
-                                  <div className="px-6 py-2 bg-mystic-950 border border-mystic-gold/10 rounded-full text-[10px] text-mystic-gold uppercase tracking-[0.3em] font-serif shadow-2xl">
+                              <div key={index} className="flex flex-col items-center space-y-4 md:space-y-8 animate-flip-in" style={{ animationDelay: `${index * 150}ms` }}>
+                                  <div className="px-4 md:px-6 py-1.5 md:py-2 bg-mystic-950 border border-mystic-gold/10 rounded-full text-[9px] md:text-[10px] text-mystic-gold uppercase tracking-[0.2em] md:tracking-[0.3em] font-serif shadow-2xl text-center">
                                       {position?.name}
                                   </div>
                                   <div className="relative group transition-transform duration-700 hover:-translate-y-4">
                                     <div className={`absolute -inset-10 rounded-full blur-[60px] transition-all duration-1000 ${isRevealed ? 'bg-mystic-gold/10' : 'bg-transparent'}`}></div>
-                                    <CardFlip 
-                                        card={card || null} 
-                                        isRevealed={isRevealed} 
+                                    <CardFlip
+                                        card={card || null}
+                                        isRevealed={isRevealed}
                                         isReversed={draw.isReversed}
                                         onClick={() => handleCardClick(index)}
-                                        width="w-40 md:w-56"
-                                        height="h-64 md:h-88"
+                                        width="w-28 sm:w-36 md:w-56"
+                                        height="h-44 sm:h-56 md:h-88"
                                     />
                                     {isRevealed && (
-                                        <button 
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); setDetailedCard(card || null); }}
-                                            className="absolute top-4 right-4 p-3 bg-black/80 rounded-full text-mystic-gold opacity-0 group-hover:opacity-100 transition-all border border-white/10 shadow-2xl scale-75 group-hover:scale-100"
+                                            className="absolute top-3 right-3 md:top-4 md:right-4 p-2.5 md:p-3 bg-black/80 rounded-full text-mystic-gold opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all border border-white/10 shadow-2xl md:scale-75 md:group-hover:scale-100"
                                         >
-                                            <BookOpen size={18} />
+                                            <BookOpen size={16} />
                                         </button>
                                     )}
                                   </div>
                                   <div className={`text-center transition-all duration-1000 ${isRevealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-                                      <p className="text-white font-serif font-bold text-2xl tracking-widest mb-2">{card?.nameCn}</p>
+                                      <p className="text-white font-serif font-bold text-lg md:text-2xl tracking-widest mb-1 md:mb-2">{card?.nameCn}</p>
                                       {draw.isReversed ? (
-                                          <span className="text-red-500/80 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                                          <span className="text-red-500/80 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] flex items-center justify-center gap-2">
                                               <Zap size={10} /> Reversed 逆位
                                           </span>
                                       ) : (
-                                          <span className="text-emerald-500/80 text-[10px] font-bold uppercase tracking-[0.3em] flex items-center gap-2">
+                                          <span className="text-emerald-500/80 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] flex items-center justify-center gap-2">
                                               <Sparkles size={10} /> Upright 正位
                                           </span>
                                       )}
@@ -589,17 +589,17 @@ const Divination: React.FC = () => {
               </div>
 
               {/* AI Analysis Section with Chat Thread */}
-              <div className="glass-card rounded-[4rem] border-white/5 p-12 md:p-20 relative overflow-hidden shadow-2xl mb-20 bg-mystic-950/20 backdrop-blur-md">
+              <div className="glass-card rounded-[2rem] md:rounded-[4rem] border-white/5 p-5 md:p-20 relative overflow-hidden shadow-2xl mb-20 bg-mystic-950/20 backdrop-blur-md">
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-mystic-gold/40 to-transparent"></div>
-                  
-                  <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-8">
-                      <div className="flex items-center gap-8">
-                          <div className="p-6 bg-purple-900/10 rounded-[2.5rem] border border-purple-500/10 shadow-[0_0_50px_rgba(168,85,247,0.05)]">
-                            <BrainCircuit className="text-purple-400 w-12 h-12"/>
+
+                  <div className="flex flex-col md:flex-row items-center justify-between mb-10 md:mb-16 gap-6 md:gap-8">
+                      <div className="flex items-center gap-4 md:gap-8">
+                          <div className="p-4 md:p-6 bg-purple-900/10 rounded-[1.5rem] md:rounded-[2.5rem] border border-purple-500/10 shadow-[0_0_50px_rgba(168,85,247,0.05)]">
+                            <BrainCircuit className="text-purple-400 w-8 h-8 md:w-12 md:h-12"/>
                           </div>
                           <div className="space-y-1">
-                            <h3 className="text-4xl font-serif text-white tracking-tight uppercase">灵能深度报告</h3>
-                            <p className="text-slate-500 text-sm font-light tracking-widest uppercase italic">Harmonic Resonance Analysis</p>
+                            <h3 className="text-2xl md:text-4xl font-serif text-white tracking-tight uppercase">灵能深度报告</h3>
+                            <p className="text-slate-500 text-xs md:text-sm font-light tracking-widest uppercase italic">Harmonic Resonance Analysis</p>
                           </div>
                       </div>
                       
@@ -612,11 +612,13 @@ const Divination: React.FC = () => {
                             onChange={(e) => handleModelChange(e.target.value as AIModel)}
                             className="bg-transparent text-[11px] text-slate-300 font-bold uppercase tracking-widest focus:outline-none cursor-pointer [&>option]:bg-slate-900"
                           >
-                            <option value={AIModel.Gemini}>Gemini</option>
+                            {/* 暂时隐藏 Gemini，后续需要时取消注释即可恢复 */}
+                            {/* <option value={AIModel.Gemini}>Gemini</option> */}
                             <option value={AIModel.DeepSeek}>DeepSeek</option>
                             <option value={AIModel.Kimi}>Kimi</option>
                             <option value={AIModel.Qwen}>通义千问</option>
-                            <option value={AIModel.Doubao}>豆包</option>
+                            {/* 暂时隐藏 豆包，后续需要时取消注释即可恢复 */}
+                            {/* <option value={AIModel.Doubao}>豆包</option> */}
                             <option value={AIModel.Claude}>Claude</option>
                             <option value={AIModel.OpenAI}>OpenAI</option>
                           </select>
@@ -707,16 +709,16 @@ const Divination: React.FC = () => {
                       )}
 
                       {chatHistory.length > 0 && (
-                          <div className="space-y-10 animate-flip-in">
+                          <div className="space-y-6 md:space-y-10 animate-flip-in">
                               {chatHistory.filter(msg => msg.role === 'model' || msg.parts[0].text !== `请解读牌阵。问题是：${question}`).map((msg, msgIdx) => (
                                   <div key={msgIdx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                      <div className={`max-w-[90%] md:max-w-[80%] rounded-[2.5rem] p-8 md:p-12 border ${
-                                          msg.role === 'user' 
-                                            ? 'bg-mystic-gold/5 border-mystic-gold/20 text-white rounded-br-none' 
+                                      <div className={`${msg.role === 'user' ? 'max-w-[90%]' : 'max-w-full w-full'} md:max-w-[80%] rounded-[1.5rem] md:rounded-[2.5rem] p-5 md:p-12 border ${
+                                          msg.role === 'user'
+                                            ? 'bg-mystic-gold/5 border-mystic-gold/20 text-white rounded-br-none'
                                             : 'bg-black/30 border-white/5 text-slate-200 rounded-bl-none shadow-inner'
                                       }`}>
-                                          {msg.role === 'user' && <div className="text-[10px] text-mystic-gold uppercase tracking-widest mb-4 opacity-60">你追问道</div>}
-                                          <div className="prose prose-invert prose-purple max-w-none text-lg font-light leading-relaxed whitespace-pre-wrap">
+                                          {msg.role === 'user' && <div className="text-[10px] text-mystic-gold uppercase tracking-widest mb-3 md:mb-4 opacity-60">你追问道</div>}
+                                          <div className="prose prose-invert prose-purple max-w-none text-[15px] md:text-lg font-light leading-relaxed md:leading-relaxed whitespace-pre-wrap break-words">
                                               {msg.parts[0].text}
                                           </div>
                                       </div>

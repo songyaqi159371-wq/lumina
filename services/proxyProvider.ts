@@ -86,22 +86,23 @@ export class ProxyProvider implements AIProvider {
       let buffer = '';
       let streamError: string | null = null;
 
-      // SSE frames are separated by a blank line; each frame has `event:` and `data:` lines.
+      // SSE frames are separated by a blank line. Backend sends one `data:` line per frame:
+      //   data: {"delta":"文本"}   增量内容
+      //   data: {"error":"..."}    错误
+      //   data: [DONE]             结束标记
       const handleFrame = (frame: string) => {
-        let event = 'message';
         let data = '';
         for (const line of frame.split('\n')) {
-          if (line.startsWith('event:')) event = line.slice(6).trim();
-          else if (line.startsWith('data:')) data += line.slice(5).trim();
+          if (line.startsWith('data:')) data += line.slice(5).trim();
         }
-        if (!data) return;
+        if (!data || data === '[DONE]') return;
         try {
           const parsed = JSON.parse(data);
-          if (event === 'delta' && parsed.text) {
-            full += parsed.text;
-            onDelta(parsed.text);
-          } else if (event === 'error') {
-            streamError = parsed.error ?? 'stream error';
+          if (parsed.delta) {
+            full += parsed.delta;
+            onDelta(parsed.delta);
+          } else if (parsed.error) {
+            streamError = parsed.error;
           }
         } catch {
           /* ignore unparsable frame */

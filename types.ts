@@ -25,15 +25,46 @@ export interface TarotSymbol {
   nameCn: string;
   nameEn: string;
   category: 'Nature' | 'Artifact' | 'Divine';
+
+  // 书中章节的开篇介绍
+  bookIntro?: string;
+
+  // 包含此象征的所有牌（从书中统计）
+  cardsContainingSymbol?: number[];
+
+  // 核心象征意义（通常是3个要点）
+  coreSymbolism?: string[];
+
+  // 词源学背景
+  etymology?: string;
+
+  // 象征的变体类型（如不同类型的王冠、柱子等）
+  variations?: {
+    name: string;
+    description: string;
+  }[];
+
+  // RWS牌组中此象征的具体形式列表
+  formsInRWS?: string[];
+
+  // 通用含义（保留原有字段）
   generalMeaning: string;
+
+  // 文化背景（神话、炼金术、共济会、卡巴拉等）
+  culturalContext?: string;
+
   imageUrl?: string;
-  details: {
+
+  // 书中的具体案例解析（保留书中原案例）
+  details?: {
     cardId: number;
     cardName: string;
     interpretation: string;
     imageUrl?: string;
   }[];
-  integrationAdvice: string;
+
+  // 整合建议（占卜应用）
+  integrationAdvice?: string;
 }
 
 export interface UserProgress {

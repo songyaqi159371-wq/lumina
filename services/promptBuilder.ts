@@ -1,4 +1,5 @@
 import { TarotCard, Spread, ReadingStyle } from '../types';
+import { getRelevantSymbols } from './symbolRetriever';
 
 export const getStylePrompt = (style: ReadingStyle): string => {
   const coreProtocol = `
@@ -55,6 +56,9 @@ export const buildInterpretPrompt = (
       - 画面描述: ${c.card.description}`
   ).join('\n');
 
+  const cardIds = cards.map(c => c.card.id);
+  const symbolContext = getRelevantSymbols(cardIds);
+
   return `
     请根据以下信息进行深度塔罗解读。
 
@@ -64,12 +68,13 @@ export const buildInterpretPrompt = (
 
     ## 抽牌详情:
     ${cardDescriptions}
-
+${symbolContext ? `\n${symbolContext}\n` : ''}
     ## 解读要求:
     1. 首先进行**全局观察**：是否有主导元素？是否有明显的数字规律？大牌与小牌的比例如何？
     2. 按照牌阵位置进行**深度关联解读**，解释牌与牌之间是如何相互影响、相互制约或相互促进的。
     3. 结合用户的具体问题，给出**针对性的启示和行动指南**。
-    4. 保持你设定的风格。
+    4. 如有象征学参考内容，请将其自然融入解读，丰富意象的深度，切勿生硬照搬。
+    5. 保持你设定的风格。
 
     请使用Markdown格式输出，保持排版优雅。
   `;
