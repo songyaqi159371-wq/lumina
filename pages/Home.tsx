@@ -134,41 +134,63 @@ const Home: React.FC = () => {
                             </button>
                         </div>
                     ) : dailyCard && (
-                        <div className="space-y-10 animate-flip-in">
+                        <div className="space-y-6 animate-flip-in">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-mystic-gold opacity-60">
                                     <Sparkle size={14} className="animate-spin-slow" />
                                     <span className="text-xs font-serif uppercase tracking-[0.4em]">{dailyCard.nameEn}</span>
                                 </div>
-                                <h4 className="text-5xl lg:text-6xl font-serif text-white tracking-tighter uppercase">
+                                <h4 className="text-4xl lg:text-5xl font-serif text-white tracking-tighter">
                                     {dailyCard.nameCn}
                                     {progress.dailyDraw.isReversed && (
-                                        <span className="ml-3 text-red-500/60 text-2xl font-sans">(逆位)</span>
+                                        <span className="ml-3 text-red-500/60 text-xl font-sans">(逆位)</span>
                                     )}
                                 </h4>
                             </div>
 
-                            <div className="relative">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-mystic-gold/30"></div>
-                                <p className="text-slate-200 leading-relaxed font-light text-xl italic pl-8">
-                                    {progress.dailyDraw.isReversed ? dailyCard.meaningDown : dailyCard.meaningUp}
+                            <div className="flex flex-wrap gap-2">
+                                {dailyCard.keywords.map(keyword => (
+                                    <span key={keyword} className="px-3 py-1 bg-mystic-gold/10 border border-mystic-gold/30 rounded-full text-xs text-mystic-gold">
+                                        {keyword}
+                                    </span>
+                                ))}
+                            </div>
+
+                            <div className="space-y-3">
+                                <h5 className="text-xs text-mystic-gold/60 uppercase tracking-[0.3em] font-serif">今日解读</h5>
+                                <div className="relative bg-black/20 rounded-xl p-5 border border-mystic-gold/10">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-mystic-gold/30 rounded-l-xl"></div>
+                                    <p className="text-slate-200 leading-relaxed text-sm pl-4">
+                                        {progress.dailyDraw.isReversed ? dailyCard.meaningDown : dailyCard.meaningUp}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <h5 className="text-xs text-slate-500 uppercase tracking-[0.3em] font-serif">画面启示</h5>
+                                <p className="text-slate-400 text-xs leading-relaxed line-clamp-3">
+                                    {dailyCard.description}
                                 </p>
                             </div>
 
-                            <div className="flex flex-wrap gap-8 pt-6">
-                                <Link to={`/learn?id=${dailyCard.id}`} className="flex items-center gap-4 group">
-                                    <div className="p-3 bg-white/5 rounded-xl border border-white/10 group-hover:border-mystic-gold/40 transition-all">
-                                        <BookOpen size={18} className="text-mystic-gold" />
+                            <div className="flex flex-wrap gap-4 pt-4 border-t border-white/5">
+                                <Link to={`/learn?id=${dailyCard.id}`} className="flex items-center gap-3 group">
+                                    <div className="p-2.5 bg-white/5 rounded-lg border border-white/10 group-hover:border-mystic-gold/40 transition-all">
+                                        <BookOpen size={16} className="text-mystic-gold" />
                                     </div>
-                                    <span className="text-xs text-slate-400 group-hover:text-white transition-colors tracking-widest font-serif uppercase">研读细节</span>
+                                    <span className="text-xs text-slate-400 group-hover:text-white transition-colors tracking-wider font-serif">深入研读</span>
                                 </Link>
-                                <Link to="/divine" className="flex items-center gap-4 group">
-                                    <div className="p-3 bg-white/5 rounded-xl border border-white/10 group-hover:border-indigo-400/40 transition-all">
-                                        <Eye size={18} className="text-indigo-400" />
+                                <Link to="/divine" className="flex items-center gap-3 group">
+                                    <div className="p-2.5 bg-white/5 rounded-lg border border-white/10 group-hover:border-indigo-400/40 transition-all">
+                                        <Eye size={16} className="text-indigo-400" />
                                     </div>
-                                    <span className="text-xs text-slate-400 group-hover:text-white transition-colors tracking-widest font-serif uppercase">开启占卜</span>
+                                    <span className="text-xs text-slate-400 group-hover:text-white transition-colors tracking-wider font-serif">开启占卜</span>
                                 </Link>
                             </div>
+
+                            <p className="text-[10px] text-slate-600 text-center pt-2">
+                                每日运势已为你开启，明日再来探索新的指引
+                            </p>
                         </div>
                     )}
                 </div>
@@ -177,34 +199,27 @@ const Home: React.FC = () => {
       </main>
 
       {/* --- COMPACT FEATURE NAVIGATION --- */}
-      <section className="w-full max-w-5xl px-4 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <FeatureCard 
-            to="/learn" 
-            icon={<BookOpen size={24}/>} 
-            title="图鉴" 
-            desc="阿卡纳全解" 
+      <section className="w-full max-w-5xl px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FeatureCard
+            to="/learn"
+            icon={<BookOpen size={24}/>}
+            title="图鉴"
+            desc="阿卡纳全解"
             id="01"
           />
-          <FeatureCard 
-            to="/symbols" 
-            icon={<Sun size={24}/>} 
-            title="象征" 
-            desc="视觉语法百科" 
+          <FeatureCard
+            to="/symbols"
+            icon={<Sun size={24}/>}
+            title="象征"
+            desc="视觉语法百科"
             id="02"
           />
-          <FeatureCard 
-            to="/practice" 
-            icon={<Zap size={24}/>} 
-            title="练习" 
-            desc="灵能觉醒挑战" 
+          <FeatureCard
+            to="/divine"
+            icon={<ScrollText size={24}/>}
+            title="占卜"
+            desc="神圣几何排阵"
             id="03"
-          />
-          <FeatureCard 
-            to="/divine" 
-            icon={<ScrollText size={24}/>} 
-            title="占卜" 
-            desc="神圣几何排阵" 
-            id="04"
           />
       </section>
 
