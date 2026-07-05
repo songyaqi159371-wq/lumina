@@ -133,9 +133,19 @@ function SymbolCard({ symbol, idx, onClick }: {
     );
 }
 
-// ─── detail view ──────────────────────────────────────────────────────────────
+// ─── detail view with tabs ────────────────────────────────────────────────────
+
+type DetailTab = 'basics' | 'culture' | 'cards';
 
 function SymbolDetail({ symbol, onBack }: { symbol: TarotSymbol; onBack: () => void }) {
+    const [activeTab, setActiveTab] = useState<DetailTab>('basics');
+
+    const tabs = [
+        { id: 'basics' as DetailTab, label: '基础信息', icon: <Sparkles size={14} /> },
+        { id: 'culture' as DetailTab, label: '文化背景', icon: <Globe size={14} /> },
+        { id: 'cards' as DetailTab, label: '逐牌解析', icon: <BookOpen size={14} /> },
+    ];
+
     return (
         <div className="h-full animate-flip-in pb-20 max-w-4xl mx-auto">
             <nav className="mb-8">
@@ -148,172 +158,216 @@ function SymbolDetail({ symbol, onBack }: { symbol: TarotSymbol; onBack: () => v
                 </button>
             </nav>
 
-            <article className="bg-mystic-800/30 rounded-3xl border border-mystic-700 p-8 md:p-12 shadow-2xl overflow-hidden relative">
+            <article className="bg-mystic-800/30 rounded-3xl border border-mystic-700 overflow-hidden shadow-2xl relative">
                 {/* bg icon */}
                 <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
                     {getSymbolIcon(symbol.id, 'w-64 h-64')}
                 </div>
 
-                <div className="relative z-10 space-y-10">
-
-                    {/* ── header ── */}
-                    <header className="pb-8 border-b border-mystic-700/50">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-16 h-16 rounded-2xl bg-black/50 flex items-center justify-center border border-mystic-600 shadow-xl">
-                                {getSymbolIcon(symbol.id, 'w-8 h-8')}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h2 className="text-4xl font-serif text-white leading-none">{symbol.nameCn}</h2>
-                                    <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ml-1 ${CATEGORY_COLOR[symbol.category] ?? ''}`}>
-                                        {CATEGORY_LABEL[symbol.category] ?? symbol.category}
-                                    </span>
-                                </div>
-                                <p className="text-mystic-gold font-serif uppercase tracking-widest text-sm">{symbol.nameEn}</p>
-                                {symbol.etymology && (
-                                    <p className="text-slate-500 text-xs mt-1.5 italic">
-                                        <span className="text-mystic-600 not-italic font-medium mr-1">词源：</span>
-                                        {symbol.etymology}
-                                    </p>
-                                )}
-                            </div>
+                {/* header */}
+                <header className="relative z-10 p-8 md:p-12 pb-6 border-b border-mystic-700/50">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-16 h-16 rounded-2xl bg-black/50 flex items-center justify-center border border-mystic-600 shadow-xl">
+                            {getSymbolIcon(symbol.id, 'w-8 h-8')}
                         </div>
-                        {symbol.cardsContainingSymbol && symbol.cardsContainingSymbol.length > 0 && (
-                            <div className="flex items-center gap-2 text-mystic-600 text-xs mt-2">
-                                <Hash size={12} />
-                                <span>出现于 {symbol.cardsContainingSymbol.length} 张牌</span>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <h2 className="text-4xl font-serif text-white leading-none">{symbol.nameCn}</h2>
+                                <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ml-1 ${CATEGORY_COLOR[symbol.category] ?? ''}`}>
+                                    {CATEGORY_LABEL[symbol.category] ?? symbol.category}
+                                </span>
                             </div>
-                        )}
-                    </header>
-
-                    {/* ── core symbolism ── */}
-                    {symbol.coreSymbolism && symbol.coreSymbolism.length > 0 && (
-                        <section>
-                            <h3 className="text-sm font-bold text-mystic-gold uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
-                                <span className="w-8 h-px bg-mystic-gold/30" /> 核心象征意义
-                            </h3>
-                            <ol className="space-y-3">
-                                {symbol.coreSymbolism.map((item, i) => (
-                                    <li key={i} className="flex gap-4 items-start">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-mystic-gold/10 border border-mystic-gold/30 flex items-center justify-center text-mystic-gold text-xs font-bold">
-                                            {i + 1}
-                                        </span>
-                                        <p className="text-slate-200 leading-relaxed font-light text-sm">{item}</p>
-                                    </li>
-                                ))}
-                            </ol>
-                        </section>
+                            <p className="text-mystic-gold font-serif uppercase tracking-widest text-sm">{symbol.nameEn}</p>
+                            {symbol.etymology && (
+                                <p className="text-slate-500 text-xs mt-1.5 italic">
+                                    <span className="text-mystic-600 not-italic font-medium mr-1">词源：</span>
+                                    {symbol.etymology}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    {symbol.cardsContainingSymbol && symbol.cardsContainingSymbol.length > 0 && (
+                        <div className="flex items-center gap-2 text-mystic-600 text-xs mt-2">
+                            <Hash size={12} />
+                            <span>出现于 {symbol.cardsContainingSymbol.length} 张牌</span>
+                        </div>
                     )}
+                </header>
 
-                    {/* ── general meaning ── */}
-                    <section>
-                        <h3 className="text-sm font-bold text-mystic-gold uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
-                            <span className="w-8 h-px bg-mystic-gold/30" /> 象征哲学含义
-                        </h3>
-                        <p className="text-slate-200 text-base leading-relaxed font-light first-letter:text-4xl first-letter:font-serif first-letter:mr-2 first-letter:float-left first-letter:text-mystic-gold">
-                            {symbol.generalMeaning}
-                        </p>
-                    </section>
-
-                    {/* ── variations ── */}
-                    {symbol.variations && symbol.variations.length > 0 && (
-                        <section>
-                            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
-                                <span className="w-8 h-px bg-amber-400/30" /> 象征变体类型
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {symbol.variations.map((v, i) => (
-                                    <div key={i} className="bg-black/20 rounded-xl p-4 border border-mystic-700/40">
-                                        <p className="text-amber-300 text-sm font-semibold mb-2">{v.name}</p>
-                                        <p className="text-slate-400 text-sm leading-relaxed font-light">{v.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* ── forms in RWS ── */}
-                    {symbol.formsInRWS && symbol.formsInRWS.length > 0 && (
-                        <section>
-                            <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
-                                <span className="w-8 h-px bg-cyan-400/30" /> 在 RWS 牌组中的呈现形式
-                            </h3>
-                            <ul className="space-y-2">
-                                {symbol.formsInRWS.map((form, i) => (
-                                    <li key={i} className="flex gap-3 items-start text-slate-300 text-sm leading-relaxed">
-                                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-cyan-400/60 mt-1.5" />
-                                        {form}
-                                    </li>
-                                ))}
-                            </ul>
-                        </section>
-                    )}
-
-                    {/* ── cultural context (collapsible) ── */}
-                    {symbol.culturalContext && (
-                        <Collapsible
-                            title="文化与历史背景"
-                            icon={<Globe size={14} className="text-indigo-400" />}
-                        >
-                            <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line font-light">
-                                {symbol.culturalContext}
-                            </p>
-                        </Collapsible>
-                    )}
-
-                    {/* ── book intro (collapsible) ── */}
-                    {symbol.bookIntro && (
-                        <Collapsible
-                            title="原著课程引言"
-                            icon={<Layers size={14} className="text-rose-400" />}
-                        >
-                            <p className="text-slate-400 text-sm leading-relaxed whitespace-pre-line font-light italic">
-                                {symbol.bookIntro}
-                            </p>
-                        </Collapsible>
-                    )}
-
-                    {/* ── per-card analysis ── */}
-                    {symbol.details && symbol.details.length > 0 && (
-                        <section>
-                            <h3 className="text-sm font-bold text-mystic-gold uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                                <span className="w-8 h-px bg-mystic-gold/30" /> 逐牌象征解析
-                            </h3>
-                            <div className="space-y-6">
-                                {symbol.details.map((detail, i) => {
-                                    const imageUrl = detail.imageUrl || getCardImageUrl(detail.cardId);
-                                    return (
-                                        <div key={i} className="flex flex-col md:flex-row gap-6 bg-black/20 rounded-2xl p-6 border border-mystic-700/30 hover:border-mystic-gold/20 transition-colors group">
-                                            <div className="w-full md:w-28 flex-shrink-0">
-                                                <div className="aspect-[2/3.5] rounded-xl overflow-hidden border border-mystic-700 shadow-lg group-hover:border-mystic-gold/40 transition-colors">
-                                                    <img
-                                                        src={imageUrl}
-                                                        alt={detail.cardName}
-                                                        className="w-full h-full object-cover"
-                                                        referrerPolicy="no-referrer"
-                                                    />
-                                                </div>
-                                                <p className="text-center mt-2 text-xs text-mystic-gold font-serif">{detail.cardName}</p>
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="whitespace-pre-wrap text-slate-300 leading-relaxed font-light text-sm">
-                                                    {detail.interpretation}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* ── footer ── */}
-                    <footer className="pt-8 border-t border-mystic-800 text-xs text-slate-500 font-light flex justify-between items-center italic">
-                        <span>Source: The Secret Language of Tarot · Amberstone</span>
-                        <span>✦ Rider-Waite-Smith Edition ✦</span>
-                    </footer>
-
+                {/* tabs */}
+                <div className="relative z-10 border-b border-mystic-700/30">
+                    <div className="flex gap-1 px-8 md:px-12">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all relative ${
+                                    activeTab === tab.id
+                                        ? 'text-mystic-gold'
+                                        : 'text-slate-500 hover:text-slate-300'
+                                }`}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                                {activeTab === tab.id && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-mystic-gold" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 </div>
+
+                {/* tab content */}
+                <div className="relative z-10 p-8 md:p-12 space-y-8">
+                    {activeTab === 'basics' && (
+                        <div className="space-y-10 animate-fade-in">
+                            {/* core symbolism */}
+                            {symbol.coreSymbolism && symbol.coreSymbolism.length > 0 && (
+                                <section>
+                                    <h3 className="text-sm font-bold text-mystic-gold uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
+                                        <span className="w-8 h-px bg-mystic-gold/30" /> 核心象征意义
+                                    </h3>
+                                    <ol className="space-y-3">
+                                        {symbol.coreSymbolism.map((item, i) => (
+                                            <li key={i} className="flex gap-4 items-start">
+                                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-mystic-gold/10 border border-mystic-gold/30 flex items-center justify-center text-mystic-gold text-xs font-bold">
+                                                    {i + 1}
+                                                </span>
+                                                <p className="text-slate-200 leading-relaxed font-light text-sm">{item}</p>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </section>
+                            )}
+
+                            {/* general meaning */}
+                            <section>
+                                <h3 className="text-sm font-bold text-mystic-gold uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
+                                    <span className="w-8 h-px bg-mystic-gold/30" /> 象征哲学含义
+                                </h3>
+                                <p className="text-slate-200 text-base leading-relaxed font-light first-letter:text-4xl first-letter:font-serif first-letter:mr-2 first-letter:float-left first-letter:text-mystic-gold">
+                                    {symbol.generalMeaning}
+                                </p>
+                            </section>
+
+                            {/* variations */}
+                            {symbol.variations && symbol.variations.length > 0 && (
+                                <section>
+                                    <h3 className="text-sm font-bold text-amber-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
+                                        <span className="w-8 h-px bg-amber-400/30" /> 象征变体类型
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {symbol.variations.map((v, i) => (
+                                            <div key={i} className="bg-black/20 rounded-xl p-4 border border-mystic-700/40">
+                                                <p className="text-amber-300 text-sm font-semibold mb-2">{v.name}</p>
+                                                <p className="text-slate-400 text-sm leading-relaxed font-light">{v.description}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'culture' && (
+                        <div className="space-y-10 animate-fade-in">
+                            {/* forms in RWS */}
+                            {symbol.formsInRWS && symbol.formsInRWS.length > 0 && (
+                                <section>
+                                    <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
+                                        <span className="w-8 h-px bg-cyan-400/30" /> 在 RWS 牌组中的呈现形式
+                                    </h3>
+                                    <ul className="space-y-2">
+                                        {symbol.formsInRWS.map((form, i) => (
+                                            <li key={i} className="flex gap-3 items-start text-slate-300 text-sm leading-relaxed">
+                                                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-cyan-400/60 mt-1.5" />
+                                                {form}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            )}
+
+                            {/* cultural context */}
+                            {symbol.culturalContext && (
+                                <section>
+                                    <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
+                                        <span className="w-8 h-px bg-indigo-400/30" /> 文化与历史背景
+                                    </h3>
+                                    <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line font-light">
+                                        {symbol.culturalContext}
+                                    </p>
+                                </section>
+                            )}
+
+                            {/* book intro */}
+                            {symbol.bookIntro && (
+                                <section>
+                                    <h3 className="text-sm font-bold text-rose-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-3">
+                                        <span className="w-8 h-px bg-rose-400/30" /> 原著课程引言
+                                    </h3>
+                                    <p className="text-slate-400 text-sm leading-relaxed whitespace-pre-line font-light italic">
+                                        {symbol.bookIntro}
+                                    </p>
+                                </section>
+                            )}
+
+                            {!symbol.formsInRWS && !symbol.culturalContext && !symbol.bookIntro && (
+                                <div className="text-center py-12 text-slate-500">
+                                    <Globe size={48} className="mx-auto mb-4 opacity-30" />
+                                    <p className="text-sm">暂无文化背景信息</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'cards' && (
+                        <div className="space-y-6 animate-fade-in">
+                            {symbol.details && symbol.details.length > 0 ? (
+                                <>
+                                    <h3 className="text-sm font-bold text-mystic-gold uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                                        <span className="w-8 h-px bg-mystic-gold/30" /> 逐牌象征解析
+                                    </h3>
+                                    {symbol.details.map((detail, i) => {
+                                        const imageUrl = detail.imageUrl || getCardImageUrl(detail.cardId);
+                                        return (
+                                            <div key={i} className="flex flex-col md:flex-row gap-6 bg-black/20 rounded-2xl p-6 border border-mystic-700/30 hover:border-mystic-gold/20 transition-colors group">
+                                                <div className="w-full md:w-28 flex-shrink-0">
+                                                    <div className="aspect-[2/3.5] rounded-xl overflow-hidden border border-mystic-700 shadow-lg group-hover:border-mystic-gold/40 transition-colors">
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={detail.cardName}
+                                                            className="w-full h-full object-cover"
+                                                            referrerPolicy="no-referrer"
+                                                        />
+                                                    </div>
+                                                    <p className="text-center mt-2 text-xs text-mystic-gold font-serif">{detail.cardName}</p>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="whitespace-pre-wrap text-slate-300 leading-relaxed font-light text-sm">
+                                                        {detail.interpretation}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </>
+                            ) : (
+                                <div className="text-center py-12 text-slate-500">
+                                    <BookOpen size={48} className="mx-auto mb-4 opacity-30" />
+                                    <p className="text-sm">暂无逐牌解析</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* footer */}
+                <footer className="relative z-10 px-8 md:px-12 pb-8 text-xs text-slate-500 font-light flex justify-between items-center italic border-t border-mystic-800 pt-6">
+                    <span>Source: The Secret Language of Tarot · Amberstone</span>
+                    <span>✦ Rider-Waite-Smith Edition ✦</span>
+                </footer>
+
             </article>
         </div>
     );
