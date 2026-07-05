@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Search, Filter, X, ChevronLeft, ChevronRight, Check, Download, Upload, Save, Trash2, Info, Sparkles } from 'lucide-react';
 import { tarotDeck, getCardImageUrl, tarotSymbols } from '../constants';
 import { Suit, TarotCard } from '../types';
-import { saveNote, getNote, getProgress, saveProgress, exportData, importData } from '../services/storage';
+import { getProgress, saveProgress, exportData, importData } from '../services/storage';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 
@@ -14,8 +14,6 @@ const Learn: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSuit, setFilterSuit] = useState<string>('all');
   const [selectedCard, setSelectedCard] = useState<TarotCard | null>(null);
-  const [userNote, setUserNote] = useState('');
-  const [isSaved, setIsSaved] = useState(false);
 
   // Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -41,8 +39,6 @@ const Learn: React.FC = () => {
 
   useEffect(() => {
     if (selectedCard) {
-        setUserNote(getNote(selectedCard.id));
-        setIsSaved(false);
         // Update progress
         const progress = getProgress();
         if (!progress.learnedCards.includes(selectedCard.id)) {
@@ -65,30 +61,12 @@ const Learn: React.FC = () => {
     }
   }, [location]);
 
-  // Helper to save current note immediately
-  const saveCurrentNoteState = (card: TarotCard | null, note: string) => {
-      if (card) {
-          saveNote(card.id, note);
-      }
-  };
-
-  const handleManualSave = () => {
-      saveCurrentNoteState(selectedCard, userNote);
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 2000);
-  };
-
   const handleClose = () => {
-      // Auto-save on close
-      saveCurrentNoteState(selectedCard, userNote);
       setSelectedCard(null);
   };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
     if (!selectedCard) return;
-    
-    // Auto-save before switching
-    saveCurrentNoteState(selectedCard, userNote);
 
     const list = filteredCards.length > 0 ? filteredCards : tarotDeck;
     const currentIndex = list.findIndex(c => c.id === selectedCard.id);
@@ -117,10 +95,6 @@ const Learn: React.FC = () => {
         onConfirm: async () => {
           try {
               await importData(file);
-              // Refresh note if card is currently open
-              if (selectedCard) {
-                  setUserNote(getNote(selectedCard.id));
-              }
           } catch (error) {
               console.error("Import failed", error);
           }
@@ -356,28 +330,6 @@ const Learn: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Notes Section with Auto-save */}
-                        <div className="bg-mystic-800/50 p-4 rounded-xl border border-mystic-700 mt-4 transition-colors focus-within:border-mystic-500 focus-within:bg-mystic-800">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-sm font-bold text-mystic-gold flex items-center gap-2">
-                                    🔮 学习笔记
-                                    <span className="text-xs font-normal text-slate-500">(自动保存)</span>
-                                </h3>
-                                <button 
-                                    onClick={handleManualSave}
-                                    className={`px-3 py-1 flex items-center gap-1 text-xs rounded transition border ${isSaved ? 'bg-green-900 border-green-700 text-green-300' : 'bg-mystic-700 hover:bg-mystic-600 text-white border-mystic-600'}`}
-                                >
-                                    {isSaved ? <><Check size={12}/> 已保存</> : <><Save size={12}/> 保存</>}
-                                </button>
-                            </div>
-                            <textarea 
-                                className="w-full bg-mystic-900/80 text-slate-200 text-sm p-3 rounded-lg border border-mystic-700 focus:border-mystic-500 focus:outline-none min-h-[100px] resize-y placeholder-slate-600"
-                                placeholder="在这里记录你的感悟... (离开或切换卡片时会自动保存)"
-                                value={userNote}
-                                onChange={(e) => setUserNote(e.target.value)}
-                                onBlur={handleManualSave} // Auto-save when focus leaves textarea
-                            />
-                        </div>
                     </div>
 
                 </div>
