@@ -266,19 +266,19 @@ const Learn: React.FC = () => {
                     </div>
 
                     <div className="space-y-6">
+                        <div>
+                            <h3 className="text-sm font-bold text-blue-400 mb-2 uppercase tracking-wider">画面象征</h3>
+                            <p className="text-slate-300 text-sm leading-relaxed">{selectedCard.description}</p>
+                        </div>
+
                         <div className="p-4 bg-mystic-800/30 rounded-lg border border-mystic-800">
                             <h3 className="text-sm font-bold text-violet-400 mb-2 uppercase tracking-wider">正位含义 (Upright)</h3>
                             <p className="text-slate-200 leading-relaxed text-sm">{selectedCard.meaningUp}</p>
                         </div>
-                        
+
                         <div className="p-4 bg-mystic-800/30 rounded-lg border border-mystic-800">
                             <h3 className="text-sm font-bold text-red-400 mb-2 uppercase tracking-wider">逆位含义 (Reversed)</h3>
                             <p className="text-slate-300 leading-relaxed text-sm">{selectedCard.meaningDown}</p>
-                        </div>
-
-                        <div>
-                            <h3 className="text-sm font-bold text-blue-400 mb-2 uppercase tracking-wider">画面象征</h3>
-                            <p className="text-slate-400 text-sm leading-relaxed">{selectedCard.description}</p>
                         </div>
 
                         {/* Symbols in this card */}
