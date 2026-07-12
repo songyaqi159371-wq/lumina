@@ -1,7 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { checkRateLimit, runChat } from './_llm.js';
+import { applyCors } from './_cors.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (applyCors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).end();
 
   if (!checkRateLimit(req)) {

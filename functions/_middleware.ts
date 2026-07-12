@@ -1,6 +1,19 @@
 // Cloudflare Pages Functions 中间件
 // 处理 CORS 和速率限制
 
+// 允许跨域访问的域名白名单
+const ALLOWED_ORIGINS = [
+  'https://lumina-4yc.pages.dev',
+  'https://lumina-mauve.vercel.app',
+];
+
+function getCorsOrigin(requestOrigin: string | null): string | null {
+  if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  return null;
+}
+
 interface RateLimitEntry {
   count: number;
   resetAt: number;
@@ -29,7 +42,7 @@ export function checkRateLimit(ip: string): boolean {
 }
 
 export async function onRequest(context: any) {
-  const { request, next, env } = context;
+  const { request, next } = context;
 
   // 获取客户端 IP
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -45,14 +58,22 @@ export async function onRequest(context: any) {
     });
   }
 
-  // 处理 CORS
+  const origin = getCorsOrigin(request.headers.get('Origin'));
+
+  // 处理 CORS 预检请求
   if (request.method === 'OPTIONS') {
     return new Response(null, {
+      status: 204,
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Max-Age': '86400',
+        ...(origin
+          ? {
+              'Access-Control-Allow-Origin': origin,
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type',
+              'Access-Control-Max-Age': '86400',
+              'Vary': 'Origin',
+            }
+          : {}),
       },
     });
   }
@@ -60,11 +81,14 @@ export async function onRequest(context: any) {
   // 继续处理请求
   const response = await next();
 
-  // 添加 CORS 头
+  // 仅对白名单内的来源添加 CORS 头
   const newResponse = new Response(response.body, response);
-  newResponse.headers.set('Access-Control-Allow-Origin', '*');
-  newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  if (origin) {
+    newResponse.headers.set('Access-Control-Allow-Origin', origin);
+    newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    newResponse.headers.set('Vary', 'Origin');
+  }
 
   return newResponse;
 }
