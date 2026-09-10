@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #111; color: #fff; }
+        .card { display: inline-block; margin: 10px; text-align: center; }
+        img { width: 100px; height: auto; border: 1px solid #333; }
+        .error { border-color: red !important; }
+        .success { border-color: green !important; }
+    </style>
+</head>
+<body>
+    <h1>Tarot Card Image Test</h1>
+    <div id="results"></div>
+    <script>
+        const results = document.getElementById('results');
+
+        // Test all card images
+        const testImages = [
+            'ar00.jpg', 'ar01.jpg', 'ar02.jpg', 'ar03.jpg', 'ar04.jpg',
+            'waac.jpg', 'wa02.jpg', 'cuac.jpg', 'swac.jpg', 'peac.jpg'
+        ];
+
+        let loaded = 0;
+        let failed = 0;
+
+        testImages.forEach(filename => {
+            const div = document.createElement('div');
+            div.className = 'card';
+
+            const img = document.createElement('img');
+            img.src = `/cards/${filename}`;
+
+            img.onload = () => {
+                img.className = 'success';
+                loaded++;
+                updateStats();
+            };
+
+            img.onerror = () => {
+                img.className = 'error';
+                failed++;
+                updateStats();
+            };
+
+            const label = document.createElement('div');
+            label.textContent = filename;
+
+            div.appendChild(img);
+            div.appendChild(label);
+            results.appendChild(div);
+        });
+
+        function updateStats() {
+            document.title = `✓${loaded} ✗${failed} - Image Test`;
+        }
+    </script>
+</body>
+</html>
