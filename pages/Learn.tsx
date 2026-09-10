@@ -10,10 +10,12 @@ import { Link } from 'react-router-dom';
 const Learn: React.FC = () => {
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  const imageLoadQueueRef = useRef<Set<number>>(new Set());
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSuit, setFilterSuit] = useState<string>('all');
   const [selectedCard, setSelectedCard] = useState<TarotCard | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
   // Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -30,12 +32,48 @@ const Learn: React.FC = () => {
   
   // Calculate filtered cards
   const filteredCards = tarotDeck.filter(card => {
-    const matchesSearch = card.nameCn.includes(searchTerm) || 
+    const matchesSearch = card.nameCn.includes(searchTerm) ||
                           card.nameEn.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           card.keywords.some(k => k.includes(searchTerm));
     const matchesSuit = filterSuit === 'all' || card.suit === filterSuit;
     return matchesSearch && matchesSuit;
   });
+
+  // Image loading with rate limiting
+  const loadImageWithDelay = (cardId: number, delay: number) => {
+    if (loadedImages.has(cardId) || imageLoadQueueRef.current.has(cardId)) {
+      return;
+    }
+
+    imageLoadQueueRef.current.add(cardId);
+
+    setTimeout(() => {
+      setLoadedImages(prev => new Set([...prev, cardId]));
+      imageLoadQueueRef.current.delete(cardId);
+    }, delay);
+  };
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry, index) => {
+          if (entry.isIntersecting) {
+            const cardId = parseInt(entry.target.getAttribute('data-card-id') || '0');
+            const delay = Math.min(index * 50, 500); // Max 500ms delay
+            loadImageWithDelay(cardId, delay);
+          }
+        });
+      },
+      { rootMargin: '200px' } // Load images 200px before they're visible
+    );
+
+    // Observe all card containers
+    const cardElements = document.querySelectorAll('[data-card-id]');
+    cardElements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [filteredCards]);
 
   useEffect(() => {
     if (selectedCard) {
@@ -177,19 +215,28 @@ const Learn: React.FC = () => {
                 没有找到匹配的牌...
             </div>
         )}
-        {filteredCards.map(card => (
-            <div 
-                key={card.id} 
+        {filteredCards.map((card, index) => (
+            <div
+                key={card.id}
+                data-card-id={card.id}
                 onClick={() => setSelectedCard(card)}
                 className="group relative aspect-[3/5] bg-mystic-800 rounded-lg overflow-hidden border border-mystic-700 hover:border-mystic-400 hover:shadow-lg hover:shadow-mystic-500/20 cursor-pointer transition-all duration-300 hover:-translate-y-1"
+                style={{ animationDelay: `${Math.min(index * 20, 1000)}ms` }}
             >
-                <img 
-                    src={getCardImageUrl(card.id)} 
-                    alt={card.nameEn} 
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300"
-                />
+                {loadedImages.has(card.id) ? (
+                    <img
+                        src={getCardImageUrl(card.id)}
+                        alt={card.nameEn}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-mystic-900 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-mystic-gold/20 border-t-mystic-gold rounded-full animate-spin"></div>
+                    </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
                     <p className="text-xs text-mystic-gold font-serif">{card.suit === Suit.Major ? (card.id === 0 ? '0' : 'M' + card.id) : card.suit}</p>
                     <h3 className="text-white font-bold text-sm truncate">{card.nameCn}</h3>
