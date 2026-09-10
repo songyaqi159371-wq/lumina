@@ -7,7 +7,7 @@ export { tarotDeck, tarotSymbols, spreads, caseStudies };
 
 export const getCardImageUrl = (id: number): string => {
   const pad = (n: number) => n.toString().padStart(2, '0');
-  
+
   // Helper to map 1-14 to Sacred Texts codes (ac, 02-10, pa, kn, qu, ki)
   const getSuffix = (n: number) => {
     if (n === 1) return 'ac';
@@ -19,19 +19,19 @@ export const getCardImageUrl = (id: number): string => {
   };
 
   if (id <= 21) {
-    return `https://www.sacred-texts.com/tarot/pkt/img/ar${pad(id)}.jpg`;
+    return `/cards/ar${pad(id)}.jpg`;
   } else if (id >= 22 && id <= 35) {
     // Wands: id 22 maps to index 1
-    return `https://www.sacred-texts.com/tarot/pkt/img/wa${getSuffix(id - 21)}.jpg`;
+    return `/cards/wa${getSuffix(id - 21)}.jpg`;
   } else if (id >= 36 && id <= 49) {
     // Cups: id 36 maps to index 1
-    return `https://www.sacred-texts.com/tarot/pkt/img/cu${getSuffix(id - 35)}.jpg`;
+    return `/cards/cu${getSuffix(id - 35)}.jpg`;
   } else if (id >= 50 && id <= 63) {
     // Swords: id 50 maps to index 1
-    return `https://www.sacred-texts.com/tarot/pkt/img/sw${getSuffix(id - 49)}.jpg`;
+    return `/cards/sw${getSuffix(id - 49)}.jpg`;
   } else if (id >= 64 && id <= 77) {
     // Pentacles: id 64 maps to index 1
-    return `https://www.sacred-texts.com/tarot/pkt/img/pe${getSuffix(id - 63)}.jpg`;
+    return `/cards/pe${getSuffix(id - 63)}.jpg`;
   }
   return `https://placehold.co/400x700?text=Card+${id}`;
 };
