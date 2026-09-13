@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分批加载测试 - 避免429错误</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #fff;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 { color: #fbbf24; margin-bottom: 10px; }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .stat { padding: 10px 20px; border-radius: 8px; }
+        .stat.success { background: #166534; }
+        .stat.error { background: #7f1d1d; }
+        .stat.pending { background: #713f12; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            aspect-ratio: 3/5;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #1e293b;
+        }
+        .card.success { border-color: #22c55e; }
+        .card.error { border-color: #ef4444; }
+        .card.pending { border-color: #fbbf24; }
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .card .status {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: rgba(0,0,0,0.7);
+        }
+        .card .label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.9);
+            padding: 3px;
+            font-size: 9px;
+            text-align: center;
+        }
+        .info {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .info h3 { color: #3b82f6; margin-bottom: 10px; }
+        .info p { color: #cbd5e1; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔮 分批加载测试</h1>
+        <p style="color: #94a3b8; margin-top: 10px;">每张卡片延迟120ms加载，避免触发Cloudflare 429错误</p>
+        <div class="stats">
+            <div class="stat pending">
+                ⏳ 等待: <strong id="pending">78</strong>
+            </div>
+            <div class="stat success">
+                ✅ 成功: <strong id="success">0</strong>
+            </div>
+            <div class="stat error">
+                ❌ 失败: <strong id="failed">0</strong>
+            </div>
+        </div>
+        <p style="color: #64748b; font-size: 14px; margin-top: 10px;">
+            预计总加载时间: <strong id="estimatedTime">~9.4秒</strong>
+        </p>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="info">
+        <h3>💡 解决方案说明</h3>
+        <p>
+            <strong>问题原因：</strong>当浏览器同时请求78张图片时，Cloudflare会触发速率限制（HTTP 429 Too Many Requests）。
+            <br><br>
+            <strong>解决方法：</strong>使用延迟加载（Staggered Loading），每张图片延迟120ms开始加载。这样：
+            <br>• 第1张：0ms 开始加载
+            <br>• 第2张：120ms 开始加载
+            <br>• 第78张：9.24秒 开始加载
+            <br><br>
+            <strong>优势：</strong>
+            <br>• ✅ 避免触发CDN速率限制
+            <br>• ✅ 浏览器并发限制自然控制请求速度
+            <br>• ✅ 用户体验流畅，卡片逐个显示
+            <br>• ✅ 失败率接近0%
+        </p>
+    </div>
+
+    <script>
+        const pad = (n) => n.toString().padStart(2, '0');
+        const getSuffix = (n) => {
+            if (n === 1) return 'ac';
+            if (n === 11) return 'pa';
+            if (n === 12) return 'kn';
+            if (n === 13) return 'qu';
+            if (n === 14) return 'ki';
+            return pad(n);
+        };
+
+        const getCardImageUrl = (id) => {
+            if (id <= 21) return `/cards/ar${pad(id)}.jpg`;
+            else if (id >= 22 && id <= 35) return `/cards/wa${getSuffix(id - 21)}.jpg`;
+            else if (id >= 36 && id <= 49) return `/cards/cu${getSuffix(id - 35)}.jpg`;
+            else if (id >= 50 && id <= 63) return `/cards/sw${getSuffix(id - 49)}.jpg`;
+            else if (id >= 64 && id <= 77) return `/cards/pe${getSuffix(id - 63)}.jpg`;
+            return null;
+        };
+
+        let successCount = 0;
+        let failedCount = 0;
+        let pendingCount = 78;
+
+        function updateStats() {
+            document.getElementById('success').textContent = successCount;
+            document.getElementById('failed').textContent = failedCount;
+            document.getElementById('pending').textContent = pendingCount;
+        }
+
+        function testCard(id, delay) {
+            const url = getCardImageUrl(id);
+            if (!url) return;
+
+            const card = document.createElement('div');
+            card.className = 'card pending';
+
+            const status = document.createElement('div');
+            status.className = 'status';
+            status.textContent = '⏳';
+
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = url.split('/').pop();
+
+            card.appendChild(status);
+            card.appendChild(label);
+            document.getElementById('grid').appendChild(card);
+
+            // 延迟加载
+            setTimeout(() => {
+                const img = document.createElement('img');
+                const startTime = performance.now();
+
+                img.onload = () => {
+                    const loadTime = performance.now() - startTime;
+                    successCount++;
+                    pendingCount--;
+                    card.className = 'card success';
+                    status.textContent = '✓';
+                    console.log(`✅ ${url} - ${loadTime.toFixed(0)}ms`);
+                    updateStats();
+                };
+
+                img.onerror = () => {
+                    failedCount++;
+                    pendingCount--;
+                    card.className = 'card error';
+                    status.textContent = '✗';
+                    img.style.display = 'none';
+                    console.error(`❌ ${url} - Failed`);
+                    updateStats();
+                };
+
+                img.src = url;
+                card.insertBefore(img, status);
+            }, delay);
+        }
+
+        // 测试所有78张卡片，每张延迟120ms
+        const DELAY_PER_CARD = 120; // 毫秒
+        for (let i = 0; i <= 77; i++) {
+            testCard(i, i * DELAY_PER_CARD);
+        }
+
+        updateStats();
+    </script>
+</body>
+</html>

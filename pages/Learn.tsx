@@ -7,29 +7,55 @@ import { getProgress, saveProgress, exportData, importData } from '../services/s
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 
-// 简化的卡片组件 - 直接加载图片，不使用懒加载
-const CardItem: React.FC<{card: TarotCard, index: number, onSelect: () => void}> = ({ card, index, onSelect }) => {
+// 带延迟加载的卡片组件 - 防止429错误
+const CardItem: React.FC<{
+  card: TarotCard,
+  index: number,
+  onSelect: () => void,
+  loadDelay: number
+}> = ({ card, index, onSelect, loadDelay }) => {
   const [imageError, setImageError] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const imgUrl = getCardImageUrl(card.id);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // 延迟加载逻辑：每张图片延迟loadDelay毫秒
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldLoad(true);
+    }, loadDelay);
+
+    return () => clearTimeout(timer);
+  }, [loadDelay]);
 
   return (
     <div
       onClick={onSelect}
       className="group relative aspect-[3/5] bg-mystic-800 rounded-lg overflow-hidden border border-mystic-700 hover:border-mystic-400 hover:shadow-lg hover:shadow-mystic-500/20 cursor-pointer transition-all duration-300 hover:-translate-y-1"
     >
-      <img
-        src={imgUrl}
-        alt={card.nameEn}
-        className="w-full h-full object-cover opacity-100 group-hover:opacity-100 transition-opacity duration-300"
-        onError={(e) => {
-          console.error(`❌ Failed to load: ${imgUrl}`, e);
-          setImageError(true);
-          e.currentTarget.style.display = 'none';
-        }}
-        onLoad={() => {
-          console.log(`✅ Loaded: ${imgUrl}`);
-        }}
-      />
+      {shouldLoad && (
+        <img
+          ref={imgRef}
+          src={imgUrl}
+          alt={card.nameEn}
+          className="w-full h-full object-cover opacity-100 group-hover:opacity-100 transition-opacity duration-300"
+          onError={(e) => {
+            console.error(`❌ Failed to load: ${imgUrl}`);
+            setImageError(true);
+            e.currentTarget.style.display = 'none';
+          }}
+          onLoad={() => {
+            console.log(`✅ Loaded: ${imgUrl}`);
+            setIsLoaded(true);
+          }}
+        />
+      )}
+      {!shouldLoad && (
+        <div className="absolute inset-0 flex items-center justify-center bg-mystic-800">
+          <div className="animate-pulse text-mystic-500">⏳</div>
+        </div>
+      )}
       {imageError && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-mystic-900 text-slate-400 text-xs p-2 text-center">
           <span className="mb-2">⚠️</span>
@@ -221,6 +247,7 @@ const Learn: React.FC = () => {
               card={card}
               index={index}
               onSelect={() => setSelectedCard(card)}
+              loadDelay={index * 120}
             />
         ))}
       </div>

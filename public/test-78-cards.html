@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试全部78张塔罗牌</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #fff;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 { color: #fbbf24; margin-bottom: 10px; }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .stat { padding: 10px 20px; border-radius: 8px; }
+        .stat.success { background: #166534; }
+        .stat.error { background: #7f1d1d; }
+        .stat.loading { background: #713f12; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            aspect-ratio: 3/5;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #1e293b;
+        }
+        .card.success { border-color: #22c55e; }
+        .card.error { border-color: #ef4444; }
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .card .label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.8);
+            padding: 5px;
+            font-size: 10px;
+            text-align: center;
+        }
+        .card .status {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .error-list {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 8px;
+        }
+        .error-item {
+            color: #ef4444;
+            padding: 5px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔮 全部78张塔罗牌加载测试</h1>
+        <div class="stats">
+            <div class="stat loading">
+                总数: <strong id="total">0</strong>
+            </div>
+            <div class="stat success">
+                ✅ 成功: <strong id="success">0</strong>
+            </div>
+            <div class="stat error">
+                ❌ 失败: <strong id="failed">0</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="error-list" id="errorList" style="display: none;">
+        <h3 style="color: #ef4444; margin-bottom: 10px;">❌ 失败的图片列表</h3>
+        <div id="errorItems"></div>
+    </div>
+
+    <script>
+        const pad = (n) => n.toString().padStart(2, '0');
+        const getSuffix = (n) => {
+            if (n === 1) return 'ac';
+            if (n === 11) return 'pa';
+            if (n === 12) return 'kn';
+            if (n === 13) return 'qu';
+            if (n === 14) return 'ki';
+            return pad(n);
+        };
+
+        const getCardImageUrl = (id) => {
+            if (id <= 21) {
+                return `/cards/ar${pad(id)}.jpg`;
+            } else if (id >= 22 && id <= 35) {
+                return `/cards/wa${getSuffix(id - 21)}.jpg`;
+            } else if (id >= 36 && id <= 49) {
+                return `/cards/cu${getSuffix(id - 35)}.jpg`;
+            } else if (id >= 50 && id <= 63) {
+                return `/cards/sw${getSuffix(id - 49)}.jpg`;
+            } else if (id >= 64 && id <= 77) {
+                return `/cards/pe${getSuffix(id - 63)}.jpg`;
+            }
+            return null;
+        };
+
+        const cardNames = {
+            0: '愚者', 1: '魔术师', 2: '女祭司', 3: '皇后', 4: '皇帝',
+            5: '教皇', 6: '恋人', 7: '战车', 8: '力量', 9: '隐士',
+            10: '命运之轮', 11: '正义', 12: '倒吊人', 13: '死神', 14: '节制',
+            15: '恶魔', 16: '高塔', 17: '星星', 18: '月亮', 19: '太阳',
+            20: '审判', 21: '世界'
+        };
+
+        let successCount = 0;
+        let failedCount = 0;
+        const failedImages = [];
+
+        function updateStats() {
+            document.getElementById('total').textContent = 78;
+            document.getElementById('success').textContent = successCount;
+            document.getElementById('failed').textContent = failedCount;
+
+            if (failedImages.length > 0) {
+                document.getElementById('errorList').style.display = 'block';
+                document.getElementById('errorItems').innerHTML = failedImages
+                    .map(url => `<div class="error-item">• ${url}</div>`)
+                    .join('');
+            }
+        }
+
+        function testCard(id) {
+            const url = getCardImageUrl(id);
+            if (!url) return;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            const img = document.createElement('img');
+            img.alt = `Card ${id}`;
+
+            const status = document.createElement('div');
+            status.className = 'status';
+            status.textContent = '⏳';
+            status.style.background = '#fbbf24';
+
+            const label = document.createElement('div');
+            label.className = 'label';
+            const name = cardNames[id] || `#${id}`;
+            label.textContent = `${name} (${url.split('/').pop()})`;
+
+            const startTime = performance.now();
+
+            img.onload = () => {
+                const loadTime = performance.now() - startTime;
+                successCount++;
+                card.className = 'card success';
+                status.textContent = '✓';
+                status.style.background = '#22c55e';
+                console.log(`✅ ${url} - ${loadTime.toFixed(0)}ms - ${img.naturalWidth}x${img.naturalHeight}`);
+                updateStats();
+            };
+
+            img.onerror = (e) => {
+                failedCount++;
+                card.className = 'card error';
+                status.textContent = '✗';
+                status.style.background = '#ef4444';
+                img.style.display = 'none';
+                failedImages.push(url);
+                console.error(`❌ ${url} - Failed to load`);
+                updateStats();
+            };
+
+            img.src = url;
+
+            card.appendChild(img);
+            card.appendChild(status);
+            card.appendChild(label);
+            document.getElementById('grid').appendChild(card);
+        }
+
+        // 测试所有78张卡片
+        for (let i = 0; i <= 77; i++) {
+            testCard(i);
+        }
+
+        updateStats();
+    </script>
+</body>
+</html>
