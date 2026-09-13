@@ -7,6 +7,44 @@ import { getProgress, saveProgress, exportData, importData } from '../services/s
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 
+// 简化的卡片组件 - 直接加载图片，不使用懒加载
+const CardItem: React.FC<{card: TarotCard, index: number, onSelect: () => void}> = ({ card, index, onSelect }) => {
+  const [imageError, setImageError] = useState(false);
+  const imgUrl = getCardImageUrl(card.id);
+
+  return (
+    <div
+      onClick={onSelect}
+      className="group relative aspect-[3/5] bg-mystic-800 rounded-lg overflow-hidden border border-mystic-700 hover:border-mystic-400 hover:shadow-lg hover:shadow-mystic-500/20 cursor-pointer transition-all duration-300 hover:-translate-y-1"
+    >
+      <img
+        src={imgUrl}
+        alt={card.nameEn}
+        className="w-full h-full object-cover opacity-100 group-hover:opacity-100 transition-opacity duration-300"
+        onError={(e) => {
+          console.error(`❌ Failed to load: ${imgUrl}`, e);
+          setImageError(true);
+          e.currentTarget.style.display = 'none';
+        }}
+        onLoad={() => {
+          console.log(`✅ Loaded: ${imgUrl}`);
+        }}
+      />
+      {imageError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-mystic-900 text-slate-400 text-xs p-2 text-center">
+          <span className="mb-2">⚠️</span>
+          <span>图片加载失败</span>
+          <span className="text-[10px] mt-1 opacity-50">{card.nameCn}</span>
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
+        <p className="text-xs text-mystic-gold font-serif">{card.suit === Suit.Major ? (card.id === 0 ? '0' : 'M' + card.id) : card.suit}</p>
+        <h3 className="text-white font-bold text-sm truncate">{card.nameCn}</h3>
+      </div>
+    </div>
+  );
+};
+
 const Learn: React.FC = () => {
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,22 +216,12 @@ const Learn: React.FC = () => {
             </div>
         )}
         {filteredCards.map((card, index) => (
-            <div
-                key={card.id}
-                onClick={() => setSelectedCard(card)}
-                className="group relative aspect-[3/5] bg-mystic-800 rounded-lg overflow-hidden border border-mystic-700 hover:border-mystic-400 hover:shadow-lg hover:shadow-mystic-500/20 cursor-pointer transition-all duration-300 hover:-translate-y-1"
-            >
-                <img
-                    src={getCardImageUrl(card.id)}
-                    alt={card.nameEn}
-                    loading="lazy"
-                    className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
-                    <p className="text-xs text-mystic-gold font-serif">{card.suit === Suit.Major ? (card.id === 0 ? '0' : 'M' + card.id) : card.suit}</p>
-                    <h3 className="text-white font-bold text-sm truncate">{card.nameCn}</h3>
-                </div>
-            </div>
+            <CardItem
+              key={card.id}
+              card={card}
+              index={index}
+              onSelect={() => setSelectedCard(card)}
+            />
         ))}
       </div>
 
@@ -234,12 +262,14 @@ const Learn: React.FC = () => {
                 {/* Left: Image Area */}
                 <div className="md:w-5/12 bg-black relative flex-shrink-0 h-[40vh] md:h-auto border-b md:border-b-0 md:border-r border-mystic-800">
                     <div className="w-full h-full flex items-center justify-center p-4">
-                        <img 
+                        <img
                             key={selectedCard.id} // Force re-render image
-                            src={getCardImageUrl(selectedCard.id)} 
-                            referrerPolicy="no-referrer"
+                            src={getCardImageUrl(selectedCard.id)}
                             className="w-full h-full object-contain drop-shadow-2xl"
-                            alt={selectedCard.nameEn} 
+                            alt={selectedCard.nameEn}
+                            onError={(e) => {
+                              console.error(`Failed to load modal image: ${getCardImageUrl(selectedCard.id)}`);
+                            }}
                         />
                     </div>
                     <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
