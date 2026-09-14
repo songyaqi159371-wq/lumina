@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { spreads, tarotDeck, getCardImageUrl } from '../constants';
 import { Spread, TarotCard, AIModel } from '../types';
 import CardFlip from '../components/CardFlip';
+import './Divination.print.css';
 import { getAIProvider } from '../services/aiProviderFactory';
 import { ChatMessage } from '../services/aiProvider';
 import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveSettings, saveHistory, getHistory, updateHistoryItem } from '../services/storage';
@@ -13,7 +15,7 @@ import {
     Compass, Zap, Globe, MessageSquarePlus, Send,
     ChevronDown, Ban,
     ShieldCheck, MapPin, UserCheck,
-    Feather, Cpu, Save, CheckCircle2, SlidersHorizontal
+    Feather, Cpu, Save, CheckCircle2, SlidersHorizontal, Download
 } from 'lucide-react';
 
 
@@ -293,6 +295,20 @@ const Divination: React.FC = () => {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
+  const handleExportReport = () => {
+    const originalTitle = document.title;
+    const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+    document.title = 'Lumina-' + (selectedSpread?.name || '塔罗占卜') + '-' + date;
+
+    const restoreTitle = () => {
+      document.title = originalTitle;
+      window.removeEventListener('afterprint', restoreTitle);
+    };
+
+    window.addEventListener('afterprint', restoreTitle);
+    window.print();
+  };
+
   return (
     <div className="max-w-7xl mx-auto min-h-[80vh] pb-20 px-4 relative">
       
@@ -516,7 +532,15 @@ const Divination: React.FC = () => {
                         <span className="text-sm md:text-lg italic text-slate-300 font-light tracking-wide">“{question}”</span>
                     </div>
                   </div>
-                  <div className="flex flex-row gap-3 md:gap-4 w-full md:w-auto">
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full md:w-auto">
+                    <button
+                        onClick={handleExportReport}
+                        disabled={!aiInterpretation || isLoadingAI}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 bg-mystic-gold/10 border border-mystic-gold/30 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-mystic-gold hover:bg-mystic-gold/20 transition group active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                        title={aiInterpretation ? '导出完整占卜报告' : 'AI 解读完成后可导出'}
+                    >
+                        <Download size={14} className="group-hover:translate-y-0.5 transition-transform" /> 导出报告
+                    </button>
                     <button
                         onClick={handleSaveResult}
                         className={`flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 border rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition group active:scale-95 ${
@@ -775,6 +799,72 @@ const Divination: React.FC = () => {
                       )}
                   </div>
               </div>
+
+              {createPortal(
+              <section className="print-report" aria-label="Lumina 塔罗占卜报告">
+                  <header className="print-report-header">
+                      <div>
+                          <p className="print-report-brand">LUMINA TAROT</p>
+                          <h1>{selectedSpread?.name}</h1>
+                      </div>
+                      <p className="print-report-date">{new Date().toLocaleString('zh-CN')}</p>
+                  </header>
+
+                  <div className="print-report-question">
+                      <span>占卜问题</span>
+                      <p>{question}</p>
+                  </div>
+
+                  <section className="print-report-section">
+                      <h2>抽卡结果</h2>
+                      <div className="print-report-cards">
+                          {drawnCards.map((draw, index) => {
+                              const card = tarotDeck.find(c => c.id === draw.cardId);
+                              const position = selectedSpread?.positions.find(p => p.id === draw.positionId);
+                              if (!card) return null;
+
+                              return (
+                                  <article key={index} className="print-report-card">
+                                      <p className="print-report-position">{position?.name}</p>
+                                      <div className="print-report-card-image">
+                                          <img
+                                              src={getCardImageUrl(card.id)}
+                                              alt={card.nameEn}
+                                              className={draw.isReversed ? 'print-report-reversed' : ''}
+                                          />
+                                      </div>
+                                      <h3>{card.nameCn}</h3>
+                                      <p>{draw.isReversed ? '逆位' : '正位'}</p>
+                                  </article>
+                              );
+                          })}
+                      </div>
+                  </section>
+
+                  {(chatHistory.length > 0 || aiInterpretation) && (
+                      <section className="print-report-section print-report-analysis">
+                          <h2>AI 深度解读</h2>
+                          {chatHistory.length > 0 ? (
+                              chatHistory
+                                  .filter(msg => msg.role === 'model' || msg.parts[0].text !== '请解读牌阵。问题是：' + question)
+                                  .map((msg, index) => (
+                                      <article key={index} className={'print-report-message ' + msg.role}>
+                                          <h3>{msg.role === 'user' ? '后续提问' : index === 0 ? '综合解读' : '补充解读'}</h3>
+                                          <p>{msg.parts[0].text}</p>
+                                      </article>
+                                  ))
+                          ) : (
+                              <article className="print-report-message model">
+                                  <h3>综合解读</h3>
+                                  <p>{aiInterpretation}</p>
+                              </article>
+                          )}
+                      </section>
+                  )}
+
+              </section>,
+              document.body
+              )}
           </div>
       )}
 
@@ -790,7 +880,14 @@ const Divination: React.FC = () => {
                 </button>
                 <div className="md:w-5/12 bg-black flex-shrink-0 h-[40vh] md:h-auto border-b md:border-b-0 md:border-r border-white/5">
                     <div className="w-full h-full flex items-center justify-center p-12">
-                        <img src={getCardImageUrl(detailedCard.id)} referrerPolicy="no-referrer" className="w-full h-full object-contain drop-shadow-2xl" alt={detailedCard.nameEn} />
+                        <img
+                            src={getCardImageUrl(detailedCard.id)}
+                            className="w-full h-full object-contain drop-shadow-2xl"
+                            alt={detailedCard.nameEn}
+                            onError={(e) => {
+                              console.error(`Failed to load detail image: ${getCardImageUrl(detailedCard.id)}`);
+                            }}
+                        />
                     </div>
                 </div>
                 <div className="md:w-7/12 p-12 md:p-16 overflow-y-auto flex-1 bg-mystic-900 custom-scrollbar">

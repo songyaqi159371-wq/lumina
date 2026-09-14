@@ -49,12 +49,14 @@ const CardFlip: React.FC<CardFlipProps> = ({
         <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden bg-slate-950 border border-mystic-gold/30 shadow-[0_0_30px_rgba(251,191,36,0.1)]">
           {card ? (
             <div className={`relative w-full h-full flex flex-col ${isReversed ? 'rotate-180' : ''}`}>
-               <img 
-                 src={imgSrc} 
+               <img
+                 src={imgSrc}
                  alt={card.nameEn}
-                 referrerPolicy="no-referrer"
                  className="w-full h-full object-cover saturate-[0.85] contrast-[1.1]"
-                 loading="lazy"
+                 onError={(e) => {
+                   console.error(`Failed to load image: ${imgSrc}`);
+                   e.currentTarget.style.background = '#1e293b';
+                 }}
                />
                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                {showLabel && (
