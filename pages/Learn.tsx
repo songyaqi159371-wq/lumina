@@ -10,31 +10,86 @@ import cardAtlasUrl from '../assets/card-atlas.jpg';
 
 const CARD_ATLAS_COLUMNS = 13;
 const CARD_ATLAS_ROWS = 6;
+const CARD_IMAGE_CDN_BASE = 'https://cdn.jsdelivr.net/gh/songyaqi159371-wq/lumina@8bf97e7f336a771270f40dfb7b4a465ab0aa6d7e/public';
+const REMOTE_IMAGE_TIMEOUT_MS = 8000;
 
 const CardItem: React.FC<{
   card: TarotCard,
+  priority: boolean,
   onSelect: () => void
-}> = ({ card, onSelect }) => {
+}> = ({ card, priority, onSelect }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(priority);
+  const [remoteLoaded, setRemoteLoaded] = useState(false);
+  const [useLocalFallback, setUseLocalFallback] = useState(false);
   const column = card.id % CARD_ATLAS_COLUMNS;
   const row = Math.floor(card.id / CARD_ATLAS_COLUMNS);
   const backgroundPositionX = ((column / (CARD_ATLAS_COLUMNS - 1)) * 100) + '%';
   const backgroundPositionY = ((row / (CARD_ATLAS_ROWS - 1)) * 100) + '%';
+  const remoteImageUrl = CARD_IMAGE_CDN_BASE + getCardImageUrl(card.id);
+
+  useEffect(() => {
+    if (shouldLoad) return;
+    if (!('IntersectionObserver' in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '400px 0px' }
+    );
+
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  useEffect(() => {
+    if (!shouldLoad || remoteLoaded || useLocalFallback) return;
+    const timeout = window.setTimeout(() => setUseLocalFallback(true), REMOTE_IMAGE_TIMEOUT_MS);
+    return () => window.clearTimeout(timeout);
+  }, [shouldLoad, remoteLoaded, useLocalFallback]);
 
   return (
     <div
+      ref={cardRef}
       onClick={onSelect}
       className="group relative aspect-[3/5] bg-mystic-800 rounded-lg overflow-hidden border border-mystic-700 hover:border-mystic-400 hover:shadow-lg hover:shadow-mystic-500/20 cursor-pointer transition-all duration-300 hover:-translate-y-1"
     >
-      <div
-        role="img"
-        aria-label={card.nameEn}
-        className="absolute inset-0 bg-no-repeat"
-        style={{
-          backgroundImage: 'url("' + cardAtlasUrl + '")',
-          backgroundPosition: backgroundPositionX + ' ' + backgroundPositionY,
-          backgroundSize: (CARD_ATLAS_COLUMNS * 100) + '% ' + (CARD_ATLAS_ROWS * 100) + '%',
-        }}
-      />
+      {useLocalFallback ? (
+        <div
+          role="img"
+          aria-label={card.nameEn}
+          className="absolute inset-0 bg-no-repeat"
+          style={{
+            backgroundImage: 'url("' + cardAtlasUrl + '")',
+            backgroundPosition: backgroundPositionX + ' ' + backgroundPositionY,
+            backgroundSize: (CARD_ATLAS_COLUMNS * 100) + '% ' + (CARD_ATLAS_ROWS * 100) + '%',
+          }}
+        />
+      ) : shouldLoad ? (
+        <img
+          src={remoteImageUrl}
+          alt={card.nameEn}
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
+          decoding="async"
+          className={'absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ' + (remoteLoaded ? 'opacity-100' : 'opacity-0')}
+          onLoad={() => setRemoteLoaded(true)}
+          onError={() => setUseLocalFallback(true)}
+        />
+      ) : null}
+
+      {shouldLoad && !remoteLoaded && !useLocalFallback && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-mystic-gold/20 border-t-mystic-gold rounded-full animate-spin" />
+        </div>
+      )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
         <p className="text-xs text-mystic-gold font-serif">{card.suit === Suit.Major ? (card.id === 0 ? '0' : 'M' + card.id) : card.suit}</p>
@@ -214,10 +269,11 @@ const Learn: React.FC = () => {
                 没有找到匹配的牌...
             </div>
         )}
-        {filteredCards.map((card) => (
+        {filteredCards.map((card, index) => (
             <CardItem
               key={card.id}
               card={card}
+              priority={index < 8}
               onSelect={() => setSelectedCard(card)}
             />
         ))}
