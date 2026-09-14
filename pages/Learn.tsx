@@ -6,40 +6,35 @@ import { Suit, TarotCard } from '../types';
 import { getProgress, saveProgress, exportData, importData } from '../services/storage';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
+import cardAtlasUrl from '../assets/card-atlas.jpg';
 
-// 极简卡片组件 - 直接渲染图片，让浏览器处理加载
+const CARD_ATLAS_COLUMNS = 13;
+const CARD_ATLAS_ROWS = 6;
+
 const CardItem: React.FC<{
   card: TarotCard,
   onSelect: () => void
 }> = ({ card, onSelect }) => {
-  const [imageError, setImageError] = useState(false);
-  const imgUrl = getCardImageUrl(card.id);
+  const column = card.id % CARD_ATLAS_COLUMNS;
+  const row = Math.floor(card.id / CARD_ATLAS_COLUMNS);
+  const backgroundPositionX = ((column / (CARD_ATLAS_COLUMNS - 1)) * 100) + '%';
+  const backgroundPositionY = ((row / (CARD_ATLAS_ROWS - 1)) * 100) + '%';
 
   return (
     <div
       onClick={onSelect}
       className="group relative aspect-[3/5] bg-mystic-800 rounded-lg overflow-hidden border border-mystic-700 hover:border-mystic-400 hover:shadow-lg hover:shadow-mystic-500/20 cursor-pointer transition-all duration-300 hover:-translate-y-1"
     >
-      {!imageError ? (
-        <img
-          src={imgUrl}
-          alt={card.nameEn}
-          className="w-full h-full object-cover transition-opacity duration-300"
-          onError={() => {
-            console.error(`❌ Failed to load: ${imgUrl}`);
-            setImageError(true);
-          }}
-          onLoad={() => {
-            console.log(`✅ Loaded: ${imgUrl}`);
-          }}
-        />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-mystic-900 text-slate-400 text-xs p-2 text-center gap-1">
-          <span className="text-lg">⚠️</span>
-          <span>加载失败</span>
-          <span className="text-[10px] opacity-50">{card.nameCn}</span>
-        </div>
-      )}
+      <div
+        role="img"
+        aria-label={card.nameEn}
+        className="absolute inset-0 bg-no-repeat"
+        style={{
+          backgroundImage: 'url("' + cardAtlasUrl + '")',
+          backgroundPosition: backgroundPositionX + ' ' + backgroundPositionY,
+          backgroundSize: (CARD_ATLAS_COLUMNS * 100) + '% ' + (CARD_ATLAS_ROWS * 100) + '%',
+        }}
+      />
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
         <p className="text-xs text-mystic-gold font-serif">{card.suit === Suit.Major ? (card.id === 0 ? '0' : 'M' + card.id) : card.suit}</p>
