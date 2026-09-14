@@ -43,6 +43,20 @@ export function checkRateLimit(ip: string): boolean {
 
 export async function onRequest(context: any) {
   const { request, next } = context;
+  const url = new URL(request.url);
+
+  // Static assets must bypass API rate limiting. The gallery requests all card
+  // images together, while this limit is intended only for AI API endpoints.
+  if (!url.pathname.startsWith('/api/')) {
+    const response = await next();
+    if (!url.pathname.startsWith('/cards/')) {
+      return response;
+    }
+
+    const cachedResponse = new Response(response.body, response);
+    cachedResponse.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    return cachedResponse;
+  }
 
   // 获取客户端 IP
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
