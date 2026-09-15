@@ -9,7 +9,7 @@ import { getAIProvider } from '../services/aiProviderFactory';
 import { ChatMessage } from '../services/aiProvider';
 import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveSettings } from '../services/storage';
 import html2canvas from 'html2canvas';
-import html2pdf from 'html2pdf.js';
+import jsPDF from 'jspdf';
 import {
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight,
     HelpCircle, Eye, X, BookOpen,
@@ -308,6 +308,7 @@ const Divination: React.FC = () => {
       const reportElement = document.querySelector('.print-report') as HTMLElement;
       if (!reportElement) {
         alert('找不到报告内容');
+        setIsExporting(false);
         return;
       }
 
@@ -317,34 +318,46 @@ const Divination: React.FC = () => {
       // 临时显示报告以便截图
       reportElement.style.opacity = '1';
       reportElement.style.zIndex = '9999';
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500)); // 增加等待时间确保渲染
 
       if (format === 'pdf') {
-        // 使用 html2pdf.js
-        const opt = {
-          margin: [14, 14, 14, 14],
-          filename: `${filename}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            letterRendering: true,
-            backgroundColor: '#ffffff'
-          },
-          jsPDF: {
-            unit: 'mm',
-            format: 'a4',
-            orientation: 'portrait',
-            compress: true
-          },
-          pagebreak: {
-            mode: ['avoid-all', 'css', 'legacy'],
-            avoid: ['.print-report-card', '.print-report-question', '.print-report-message']
-          }
-        };
+        // 使用 jsPDF + html2canvas 手动分页
+        const canvas = await html2canvas(reportElement, {
+          scale: 1.5, // 降低scale减小文件大小
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowHeight: reportElement.scrollHeight,
+          height: reportElement.scrollHeight
+        });
 
-        await html2pdf().set(opt).from(reportElement).save();
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 14;
+        const contentWidth = pageWidth - 2 * margin;
+        const contentHeight = pageHeight - 2 * margin;
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.90); // JPEG 90%质量
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // 第一页
+        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
+        heightLeft -= contentHeight;
+
+        // 添加更多页
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+          heightLeft -= contentHeight;
+        }
+
+        pdf.save(`${filename}.pdf`);
 
         if ((window as any).notifyGuideAction) {
           setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
@@ -383,7 +396,7 @@ const Divination: React.FC = () => {
 
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败，请重试');
+      alert('导出失败：' + (error as Error).message + '\n请重试或使用"下载为图片"选项');
 
       // 确保恢复隐藏
       const reportElement = document.querySelector('.print-report') as HTMLElement;
