@@ -421,7 +421,7 @@ const Divination: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 spread-cards">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 spread-cards">
             {spreads.map(spread => (
                 <div
                     key={spread.id}
@@ -508,7 +508,7 @@ const Divination: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-3 md:gap-4 p-8 md:p-12 glass-card rounded-[3.5rem] border-white/5 w-full mb-20 shadow-[0_0_120px_rgba(0,0,0,0.6)] relative overflow-hidden">
+            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-13 gap-2 sm:gap-3 md:gap-4 p-4 sm:p-8 md:p-12 glass-card rounded-3xl sm:rounded-[3.5rem] border-white/5 w-full mb-10 sm:mb-20 shadow-[0_0_120px_rgba(0,0,0,0.6)] relative overflow-hidden">
                 {shuffledDeck.map((actualCardId, i) => {
                     const isPicked = pickedIndices.some((p: any) => p.deckIndex === i);
                     return (
@@ -566,7 +566,7 @@ const Divination: React.FC = () => {
               </header>
 
               <div className="mb-20 md:mb-32">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-center gap-x-4 gap-y-10 md:gap-10 lg:gap-20">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap lg:justify-center gap-4 sm:gap-6 md:gap-10 lg:gap-20">
                       {drawnCards.map((draw, index) => {
                           const card = tarotDeck.find(c => c.id === draw.cardId);
                           const position = selectedSpread?.positions.find(p => p.id === draw.positionId);

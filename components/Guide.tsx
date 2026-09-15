@@ -54,7 +54,7 @@ const GUIDE_TIPS: GuideTipConfig[] = [
     step: 4,
     page: '/divine',
     title: '步骤 4/10：选择牌阵 🃏',
-    content: '现在请选择一个牌阵开始占卜。建议选择"三牌阵"进行第一次体验。点击任意牌阵卡片继续。',
+    content: '根据你的实际情况，选择适合的牌阵开始占卜。点击任意牌阵卡片继续。',
     position: 'top',
     waitForAction: 'spreadSelect'
   },
@@ -235,7 +235,7 @@ export const Guide: React.FC = () => {
       {/* 欢迎弹窗 */}
       <AnimatePresence>
         {showWelcome && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -247,54 +247,54 @@ export const Guide: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-2xl bg-gradient-to-br from-mystic-950 to-mystic-900 border border-mystic-gold/20 rounded-[3rem] p-12 shadow-2xl"
+              className="relative w-full max-w-2xl bg-gradient-to-br from-mystic-950 to-mystic-900 border border-mystic-gold/20 rounded-2xl sm:rounded-[3rem] p-6 sm:p-12 shadow-2xl my-4 max-h-[90vh] overflow-y-auto"
             >
               {/* 装饰元素 */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="w-20 h-20 bg-gradient-to-br from-mystic-gold to-yellow-600 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(251,191,36,0.4)]">
-                  <Sparkles className="text-mystic-950 w-10 h-10" />
+                <div className="w-14 h-14 sm:w-20 sm:h-20 bg-gradient-to-br from-mystic-gold to-yellow-600 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(251,191,36,0.4)]">
+                  <Sparkles className="text-mystic-950 w-7 h-7 sm:w-10 sm:h-10" />
                 </div>
               </div>
 
-              <div className="text-center mt-8 mb-10">
-                <h2 className="text-4xl font-serif text-white mb-4 tracking-wide">欢迎来到 Lumina Tarot</h2>
-                <p className="text-slate-400 text-lg font-light leading-relaxed">
+              <div className="text-center mt-6 sm:mt-8 mb-6 sm:mb-10">
+                <h2 className="text-2xl sm:text-4xl font-serif text-white mb-2 sm:mb-4 tracking-wide">欢迎来到 Lumina Tarot</h2>
+                <p className="text-slate-400 text-sm sm:text-lg font-light leading-relaxed px-2">
                   探索神秘的塔罗世界，开启自我觉察之旅
                 </p>
               </div>
 
               {/* 功能介绍 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div className="flex flex-col items-center text-center p-6 bg-white/5 rounded-2xl border border-white/10 hover:border-mystic-gold/30 transition">
-                  <div className="w-14 h-14 bg-indigo-500/20 rounded-xl flex items-center justify-center mb-4 border border-indigo-500/30">
-                    <BookOpen className="text-indigo-400 w-7 h-7" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-10">
+                <div className="flex flex-col items-center text-center p-4 sm:p-6 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 hover:border-mystic-gold/30 transition">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 bg-indigo-500/20 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-4 border border-indigo-500/30">
+                    <BookOpen className="text-indigo-400 w-5 h-5 sm:w-7 sm:h-7" />
                   </div>
-                  <h3 className="text-white font-serif text-lg mb-2">图鉴</h3>
-                  <p className="text-slate-500 text-sm font-light">认识78张塔罗牌</p>
+                  <h3 className="text-white font-serif text-base sm:text-lg mb-1 sm:mb-2">图鉴</h3>
+                  <p className="text-slate-500 text-xs sm:text-sm font-light">认识78张塔罗牌</p>
                 </div>
 
-                <div className="flex flex-col items-center text-center p-6 bg-white/5 rounded-2xl border border-white/10 hover:border-mystic-gold/30 transition">
-                  <div className="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4 border border-purple-500/30">
-                    <Feather className="text-purple-400 w-7 h-7" />
+                <div className="flex flex-col items-center text-center p-4 sm:p-6 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 hover:border-mystic-gold/30 transition">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 bg-purple-500/20 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-4 border border-purple-500/30">
+                    <Feather className="text-purple-400 w-5 h-5 sm:w-7 sm:h-7" />
                   </div>
-                  <h3 className="text-white font-serif text-lg mb-2">象征</h3>
-                  <p className="text-slate-500 text-sm font-light">理解塔罗符号体系</p>
+                  <h3 className="text-white font-serif text-base sm:text-lg mb-1 sm:mb-2">象征</h3>
+                  <p className="text-slate-500 text-xs sm:text-sm font-light">理解塔罗符号体系</p>
                 </div>
 
-                <div className="flex flex-col items-center text-center p-6 bg-white/5 rounded-2xl border border-white/10 hover:border-mystic-gold/30 transition">
-                  <div className="w-14 h-14 bg-mystic-gold/20 rounded-xl flex items-center justify-center mb-4 border border-mystic-gold/30">
-                    <Eye className="text-mystic-gold w-7 h-7" />
+                <div className="flex flex-col items-center text-center p-4 sm:p-6 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 hover:border-mystic-gold/30 transition">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 bg-mystic-gold/20 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-4 border border-mystic-gold/30">
+                    <Eye className="text-mystic-gold w-5 h-5 sm:w-7 sm:h-7" />
                   </div>
-                  <h3 className="text-white font-serif text-lg mb-2">占卜</h3>
-                  <p className="text-slate-500 text-sm font-light">开始你的第一次占卜</p>
+                  <h3 className="text-white font-serif text-base sm:text-lg mb-1 sm:mb-2">占卜</h3>
+                  <p className="text-slate-500 text-xs sm:text-sm font-light">开始你的第一次占卜</p>
                 </div>
               </div>
 
               {/* 提示 */}
-              <div className="bg-mystic-gold/10 border border-mystic-gold/20 rounded-2xl p-5 mb-8">
-                <div className="flex items-start gap-3">
-                  <HelpCircle className="text-mystic-gold w-5 h-5 shrink-0 mt-0.5" />
-                  <p className="text-slate-300 text-sm leading-relaxed">
+              <div className="bg-mystic-gold/10 border border-mystic-gold/20 rounded-xl sm:rounded-2xl p-3 sm:p-5 mb-6 sm:mb-8">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <HelpCircle className="text-mystic-gold w-4 h-4 sm:w-5 sm:h-5 shrink-0 mt-0.5" />
+                  <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
                     <span className="text-mystic-gold font-bold">建议：</span>
                     如果你是第一次接触塔罗，建议先浏览"图鉴"和"象征"板块了解基础知识，再开启占卜。我们也准备了简短的引导帮助你快速上手。
                   </p>
@@ -302,25 +302,25 @@ export const Guide: React.FC = () => {
               </div>
 
               {/* 按钮 */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <button
                   onClick={handleDisable}
-                  className="flex-1 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-white text-sm transition"
+                  className="flex-1 px-4 sm:px-6 py-2.5 sm:py-4 bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl text-slate-400 hover:text-white text-xs sm:text-sm transition"
                 >
                   不再显示
                 </button>
                 <button
                   onClick={handleSkip}
-                  className="flex-1 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-slate-300 hover:text-white text-sm transition"
+                  className="flex-1 px-4 sm:px-6 py-2.5 sm:py-4 bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl text-slate-300 hover:text-white text-xs sm:text-sm transition"
                 >
                   自由探索
                 </button>
                 <button
                   onClick={handleStartGuide}
-                  className="flex-[2] px-8 py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 hover:from-mystic-gold/90 hover:to-yellow-600/90 rounded-2xl text-mystic-950 font-bold text-sm transition shadow-lg shadow-mystic-gold/20 flex items-center justify-center gap-2 group"
+                  className="sm:flex-[2] px-6 sm:px-8 py-2.5 sm:py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 hover:from-mystic-gold/90 hover:to-yellow-600/90 rounded-xl sm:rounded-2xl text-mystic-950 font-bold text-xs sm:text-sm transition shadow-lg shadow-mystic-gold/20 flex items-center justify-center gap-2 group"
                 >
                   开始完整引导
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </motion.div>
@@ -336,77 +336,80 @@ export const Guide: React.FC = () => {
             dragMomentum={false}
             dragElastic={0}
             dragConstraints={{
-              top: 20,
-              left: 20,
-              right: window.innerWidth - 420,
-              bottom: window.innerHeight - 300
+              top: -9999,
+              left: -9999,
+              right: 9999,
+              bottom: 9999
             }}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed z-[150] cursor-move"
+            className="fixed z-[150] cursor-move left-0 right-0 mx-2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:mx-0"
             style={{
-              left: '50%',
-              top: currentTip.position === 'top' ? '100px' :
+              top: currentTip.position === 'top' ? '70px' :
                    currentTip.position === 'bottom' ? 'auto' : '50%',
-              bottom: currentTip.position === 'bottom' ? '100px' : 'auto',
-              transform: currentTip.position === 'center' ? 'translate(-50%, -50%)' : 'translateX(-50%)'
+              bottom: currentTip.position === 'bottom' ? '70px' : 'auto',
+              transform: currentTip.position === 'center'
+                ? 'translate(-50%, -50%)'
+                : typeof window !== 'undefined' && window.innerWidth < 640 ? 'none' : 'translateX(-50%)',
+              maxWidth: 'calc(100vw - 16px)',
+              width: typeof window !== 'undefined' && window.innerWidth < 640 ? 'calc(100vw - 16px)' : 'auto'
             }}
           >
-            <div className="bg-gradient-to-br from-mystic-900 to-mystic-950 border-2 border-mystic-gold/40 rounded-3xl p-8 shadow-2xl max-w-md relative">
+            <div className="bg-gradient-to-br from-mystic-900 to-mystic-950 border-2 border-mystic-gold/40 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-2xl w-full sm:max-w-md relative">
               {/* 拖拽提示 */}
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 bg-mystic-gold/30 rounded-full cursor-grab active:cursor-grabbing" />
+              <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-10 h-1 bg-mystic-gold/30 rounded-full cursor-grab active:cursor-grabbing" />
 
               {/* 装饰光晕 */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-mystic-gold/20 to-yellow-600/20 rounded-3xl blur-xl -z-10"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-mystic-gold/20 to-yellow-600/20 rounded-2xl sm:rounded-3xl blur-xl -z-10"></div>
 
               {/* 步骤指示 */}
-              <div className="absolute -top-3 -right-3 w-10 h-10 bg-mystic-gold rounded-full flex items-center justify-center text-mystic-950 font-bold text-sm shadow-lg">
+              <div className="absolute -top-2 -right-2 w-8 h-8 sm:w-10 sm:h-10 bg-mystic-gold rounded-full flex items-center justify-center text-mystic-950 font-bold text-xs sm:text-sm shadow-lg">
                 {currentTip.step}/10
               </div>
 
               <button
                 onClick={handleFinishGuide}
-                className="absolute top-4 right-4 p-2 text-slate-500 hover:text-white transition"
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 p-1.5 sm:p-2 text-slate-500 hover:text-white transition"
               >
-                <X size={18} />
+                <X size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
 
-              <div className="flex items-start gap-4 mb-6 mt-4">
-                <div className="w-10 h-10 bg-mystic-gold/20 rounded-xl flex items-center justify-center shrink-0 border border-mystic-gold/30">
-                  <Sparkles className="text-mystic-gold w-5 h-5" />
+              <div className="flex items-start gap-2 sm:gap-4 mb-4 sm:mb-6 mt-3 sm:mt-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-mystic-gold/20 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-mystic-gold/30">
+                  <Sparkles className="text-mystic-gold w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h3 className="text-white font-serif text-xl mb-2">{currentTip.title}</h3>
-                  <p className="text-slate-300 text-sm leading-relaxed">{currentTip.content}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-white font-serif text-sm sm:text-xl mb-1 sm:mb-2 leading-tight">{currentTip.title}</h3>
+                  <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">{currentTip.content}</p>
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={handleFinishGuide}
-                  className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white text-sm transition"
+                  className="flex-1 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-lg sm:rounded-xl text-slate-400 hover:text-white text-xs sm:text-sm transition"
                 >
-                  退出引导
+                  退出
                 </button>
                 {currentTip.waitForAction === 'navigate' && (
                   <button
                     onClick={handleManualNext}
-                    className="flex-[2] px-6 py-2 bg-mystic-gold hover:bg-mystic-gold/90 rounded-xl text-mystic-950 font-bold text-sm transition flex items-center justify-center gap-2 group"
+                    className="flex-[2] px-3 sm:px-6 py-1.5 sm:py-2 bg-mystic-gold hover:bg-mystic-gold/90 rounded-lg sm:rounded-xl text-mystic-950 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1 sm:gap-2 group"
                   >
-                    {currentTip.actionText || '下一步'}
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <span className="truncate">{currentTip.actionText || '下一步'}</span>
+                    <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform shrink-0" />
                   </button>
                 )}
                 {currentTip.waitForAction !== 'navigate' && (
-                  <div className="flex-[2] px-6 py-2 bg-mystic-gold/20 border-2 border-mystic-gold rounded-xl text-mystic-gold font-bold text-sm flex items-center justify-center gap-2">
+                  <div className="flex-[2] px-3 sm:px-6 py-1.5 sm:py-2 bg-mystic-gold/20 border-2 border-mystic-gold rounded-lg sm:rounded-xl text-mystic-gold font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2">
                     <div className="animate-pulse">等待操作...</div>
                   </div>
                 )}
               </div>
 
-              {/* 拖拽提示文字 */}
-              <div className="mt-3 text-center text-slate-600 text-[10px] uppercase tracking-widest">
+              {/* 拖拽提示文字 - 移动端隐藏 */}
+              <div className="hidden sm:block mt-3 text-center text-slate-600 text-[10px] uppercase tracking-widest">
                 提示框可拖拽移动
               </div>
             </div>
