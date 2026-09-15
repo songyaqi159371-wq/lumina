@@ -9,7 +9,7 @@ import { getAIProvider } from '../services/aiProviderFactory';
 import { ChatMessage } from '../services/aiProvider';
 import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveSettings } from '../services/storage';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import html2pdf from 'html2pdf.js';
 import {
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight,
     HelpCircle, Eye, X, BookOpen,
@@ -314,16 +314,59 @@ const Divination: React.FC = () => {
       const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
       const filename = `Lumina-${selectedSpread?.name || '塔罗占卜'}-${date}`;
 
-      // 临时显示报告用于截图
-      const originalPosition = reportElement.style.position;
-      const originalLeft = reportElement.style.left;
-      reportElement.style.position = 'absolute';
-      reportElement.style.left = '0';
+      if (format === 'pdf') {
+        // 临时显示报告
+        const originalPosition = reportElement.style.position;
+        const originalLeft = reportElement.style.left;
+        reportElement.style.position = 'absolute';
+        reportElement.style.left = '0';
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-      if (format === 'image') {
-        // 导出为图片 - 捕获完整滚动内容
+        // 使用 html2pdf.js 的高级配置
+        const opt = {
+          margin: [14, 14, 14, 14],
+          filename: `${filename}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            letterRendering: true,
+            backgroundColor: '#ffffff'
+          },
+          jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait',
+            compress: true
+          },
+          pagebreak: {
+            mode: ['avoid-all', 'css', 'legacy'],
+            avoid: ['.print-report-card', '.print-report-question', '.print-report-message']
+          }
+        };
+
+        const worker = html2pdf().set(opt).from(reportElement);
+        await worker.save();
+
+        // 恢复位置
+        reportElement.style.position = originalPosition;
+        reportElement.style.left = originalLeft;
+
+        if ((window as any).notifyGuideAction) {
+          setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+        }
+
+      } else if (format === 'image') {
+        // 导出为图片
+        const originalPosition = reportElement.style.position;
+        const originalLeft = reportElement.style.left;
+        reportElement.style.position = 'absolute';
+        reportElement.style.left = '0';
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         const canvas = await html2canvas(reportElement, {
           scale: 2,
           useCORS: true,
@@ -350,58 +393,6 @@ const Divination: React.FC = () => {
             }
           }
         }, 'image/png', 0.95);
-
-      } else if (format === 'pdf') {
-        // 导出为PDF - 自动分页处理
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = 210; // A4宽度
-        const pageHeight = 297; // A4高度
-        const margin = 14;
-        const contentWidth = pageWidth - 2 * margin;
-
-        // 使用较低的scale以减小文件大小，同时保持清晰度
-        const canvas = await html2canvas(reportElement, {
-          scale: 1.5,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          windowHeight: reportElement.scrollHeight,
-          height: reportElement.scrollHeight
-        });
-
-        reportElement.style.position = originalPosition;
-        reportElement.style.left = originalLeft;
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.85); // 使用JPEG格式压缩
-        const imgWidth = contentWidth;
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
-
-        const totalPages = Math.ceil(imgHeight / (pageHeight - 2 * margin));
-
-        for (let i = 0; i < totalPages; i++) {
-          if (i > 0) {
-            pdf.addPage();
-          }
-
-          const yOffset = -(pageHeight - 2 * margin) * i;
-
-          pdf.addImage(
-            imgData,
-            'JPEG',
-            margin,
-            margin + yOffset,
-            imgWidth,
-            imgHeight,
-            undefined,
-            'FAST'
-          );
-        }
-
-        pdf.save(`${filename}.pdf`);
-
-        if ((window as any).notifyGuideAction) {
-          setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
-        }
       }
 
     } catch (error) {

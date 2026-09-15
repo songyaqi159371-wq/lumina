@@ -15,6 +15,8 @@
   justify-content: space-between;
   padding-bottom: 16px;
   border-bottom: 2px solid #c5a059;
+  page-break-after: avoid;
+  break-after: avoid;
 }
 
 .print-report-header h1 {
@@ -49,6 +51,8 @@
   padding: 14px 16px;
   border-left: 4px solid #c5a059;
   background: #f7f3e9;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .print-report-question span {
@@ -66,6 +70,8 @@
 
 .print-report-section {
   margin-top: 22px;
+  page-break-inside: auto;
+  break-inside: auto;
 }
 
 .print-report-section > h2 {
@@ -73,6 +79,8 @@
   color: #111827;
   font-family: "Playfair Display", "Microsoft YaHei", serif;
   font-size: 19px;
+  page-break-after: avoid;
+  break-after: avoid;
 }
 
 .print-report-cards {
