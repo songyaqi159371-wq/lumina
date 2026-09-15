@@ -300,7 +300,7 @@ const Divination: React.FC = () => {
     setShuffledDeck([]);
   }, []);
 
-  const handleExportReport = async (format: 'pdf' | 'image' | 'print') => {
+  const handleExportReport = async (format: 'pdf' | 'image') => {
     setIsExporting(true);
     setShowExportMenu(false);
 
@@ -315,13 +315,28 @@ const Divination: React.FC = () => {
       const filename = `Lumina-${selectedSpread?.name || '塔罗占卜'}-${date}`;
 
       if (format === 'image') {
-        // 导出为图片
+        // 导出为图片 - 需要滚动截取完整内容
+        const originalPosition = reportElement.style.position;
+        const originalLeft = reportElement.style.left;
+
+        // 临时显示报告用于截图
+        reportElement.style.position = 'absolute';
+        reportElement.style.left = '0';
+
+        await new Promise(resolve => setTimeout(resolve, 100)); // 等待渲染
+
         const canvas = await html2canvas(reportElement, {
           scale: 2,
           useCORS: true,
           logging: false,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          windowHeight: reportElement.scrollHeight,
+          height: reportElement.scrollHeight
         });
+
+        // 恢复原始位置
+        reportElement.style.position = originalPosition;
+        reportElement.style.left = originalLeft;
 
         canvas.toBlob((blob) => {
           if (blob) {
@@ -337,35 +352,20 @@ const Divination: React.FC = () => {
               setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
             }
           }
-        });
+        }, 'image/png', 0.95);
 
       } else if (format === 'pdf') {
-        // 导出为PDF
-        const canvas = await html2canvas(reportElement, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        });
-
-        const imgWidth = 210; // A4宽度（mm）
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgData = canvas.toDataURL('image/png');
-
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(`${filename}.pdf`);
-
-        // 通知引导
-        if ((window as any).notifyGuideAction) {
-          setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
-        }
-
-      } else if (format === 'print') {
-        // 使用浏览器打印
+        // 导出为PDF - 使用浏览器打印API
         const originalTitle = document.title;
         document.title = filename;
+
+        // 检测是否为移动设备
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile) {
+          // 移动端：提示用户使用"另存为PDF"
+          alert('请在打印预览界面选择"另存为PDF"或"保存为PDF"，然后点击保存。');
+        }
 
         const restoreTitle = () => {
           document.title = originalTitle;
@@ -373,12 +373,20 @@ const Divination: React.FC = () => {
         };
 
         window.addEventListener('afterprint', restoreTitle);
-        window.print();
 
-        // 通知引导
-        if ((window as any).notifyGuideAction) {
-          setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+        try {
+          window.print();
+
+          // 通知引导
+          if ((window as any).notifyGuideAction) {
+            setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+          }
+        } catch (error) {
+          console.error('打印功能出错:', error);
+          alert('打印功能出错，请重试或使用"下载为图片"选项。');
         }
+
+        document.title = originalTitle;
       }
 
     } catch (error) {
@@ -644,7 +652,7 @@ const Divination: React.FC = () => {
                               <ImageIcon size={18} className="text-mystic-gold" />
                               <div>
                                 <div className="font-bold">下载为图片</div>
-                                <div className="text-xs text-slate-500 mt-0.5">PNG格式，高清保存</div>
+                                <div className="text-xs text-slate-500 mt-0.5">PNG格式，完整保存</div>
                               </div>
                             </button>
                             <button
@@ -654,17 +662,7 @@ const Divination: React.FC = () => {
                               <Download size={18} className="text-indigo-400" />
                               <div>
                                 <div className="font-bold">下载为PDF</div>
-                                <div className="text-xs text-slate-500 mt-0.5">PDF格式，便于打印</div>
-                              </div>
-                            </button>
-                            <button
-                              onClick={() => handleExportReport('print')}
-                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3 border-t border-white/5"
-                            >
-                              <Feather size={18} className="text-purple-400" />
-                              <div>
-                                <div className="font-bold">浏览器打印</div>
-                                <div className="text-xs text-slate-500 mt-0.5">使用系统打印功能</div>
+                                <div className="text-xs text-slate-500 mt-0.5">使用打印功能另存为PDF</div>
                               </div>
                             </button>
                           </div>
