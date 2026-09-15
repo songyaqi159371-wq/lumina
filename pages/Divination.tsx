@@ -314,17 +314,16 @@ const Divination: React.FC = () => {
       const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
       const filename = `Lumina-${selectedSpread?.name || '塔罗占卜'}-${date}`;
 
+      // 临时显示报告用于截图
+      const originalPosition = reportElement.style.position;
+      const originalLeft = reportElement.style.left;
+      reportElement.style.position = 'absolute';
+      reportElement.style.left = '0';
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       if (format === 'image') {
-        // 导出为图片 - 需要滚动截取完整内容
-        const originalPosition = reportElement.style.position;
-        const originalLeft = reportElement.style.left;
-
-        // 临时显示报告用于截图
-        reportElement.style.position = 'absolute';
-        reportElement.style.left = '0';
-
-        await new Promise(resolve => setTimeout(resolve, 100)); // 等待渲染
-
+        // 导出为图片 - 捕获完整滚动内容
         const canvas = await html2canvas(reportElement, {
           scale: 2,
           useCORS: true,
@@ -334,7 +333,6 @@ const Divination: React.FC = () => {
           height: reportElement.scrollHeight
         });
 
-        // 恢复原始位置
         reportElement.style.position = originalPosition;
         reportElement.style.left = originalLeft;
 
@@ -347,7 +345,6 @@ const Divination: React.FC = () => {
             link.click();
             URL.revokeObjectURL(url);
 
-            // 通知引导
             if ((window as any).notifyGuideAction) {
               setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
             }
@@ -355,38 +352,56 @@ const Divination: React.FC = () => {
         }, 'image/png', 0.95);
 
       } else if (format === 'pdf') {
-        // 导出为PDF - 使用浏览器打印API
-        const originalTitle = document.title;
-        document.title = filename;
+        // 导出为PDF - 自动分页处理
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = 210; // A4宽度
+        const pageHeight = 297; // A4高度
+        const margin = 14;
+        const contentWidth = pageWidth - 2 * margin;
 
-        // 检测是否为移动设备
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // 使用较低的scale以减小文件大小，同时保持清晰度
+        const canvas = await html2canvas(reportElement, {
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowHeight: reportElement.scrollHeight,
+          height: reportElement.scrollHeight
+        });
 
-        if (isMobile) {
-          // 移动端：提示用户使用"另存为PDF"
-          alert('请在打印预览界面选择"另存为PDF"或"保存为PDF"，然后点击保存。');
-        }
+        reportElement.style.position = originalPosition;
+        reportElement.style.left = originalLeft;
 
-        const restoreTitle = () => {
-          document.title = originalTitle;
-          window.removeEventListener('afterprint', restoreTitle);
-        };
+        const imgData = canvas.toDataURL('image/jpeg', 0.85); // 使用JPEG格式压缩
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
-        window.addEventListener('afterprint', restoreTitle);
+        const totalPages = Math.ceil(imgHeight / (pageHeight - 2 * margin));
 
-        try {
-          window.print();
-
-          // 通知引导
-          if ((window as any).notifyGuideAction) {
-            setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+        for (let i = 0; i < totalPages; i++) {
+          if (i > 0) {
+            pdf.addPage();
           }
-        } catch (error) {
-          console.error('打印功能出错:', error);
-          alert('打印功能出错，请重试或使用"下载为图片"选项。');
+
+          const yOffset = -(pageHeight - 2 * margin) * i;
+
+          pdf.addImage(
+            imgData,
+            'JPEG',
+            margin,
+            margin + yOffset,
+            imgWidth,
+            imgHeight,
+            undefined,
+            'FAST'
+          );
         }
 
-        document.title = originalTitle;
+        pdf.save(`${filename}.pdf`);
+
+        if ((window as any).notifyGuideAction) {
+          setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+        }
       }
 
     } catch (error) {
@@ -646,23 +661,23 @@ const Divination: React.FC = () => {
                           />
                           <div className="absolute right-0 top-full mt-2 w-56 bg-mystic-900 border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[100]">
                             <button
-                              onClick={() => handleExportReport('image')}
-                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3"
-                            >
-                              <ImageIcon size={18} className="text-mystic-gold" />
-                              <div>
-                                <div className="font-bold">下载为图片</div>
-                                <div className="text-xs text-slate-500 mt-0.5">PNG格式，完整保存</div>
-                              </div>
-                            </button>
-                            <button
                               onClick={() => handleExportReport('pdf')}
-                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3 border-t border-white/5"
+                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3"
                             >
                               <Download size={18} className="text-indigo-400" />
                               <div>
                                 <div className="font-bold">下载为PDF</div>
-                                <div className="text-xs text-slate-500 mt-0.5">使用打印功能另存为PDF</div>
+                                <div className="text-xs text-slate-500 mt-0.5">自动分页，完整保存</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => handleExportReport('image')}
+                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3 border-t border-white/5"
+                            >
+                              <ImageIcon size={18} className="text-mystic-gold" />
+                              <div>
+                                <div className="font-bold">下载为图片</div>
+                                <div className="text-xs text-slate-500 mt-0.5">PNG格式，长图保存</div>
                               </div>
                             </button>
                           </div>
