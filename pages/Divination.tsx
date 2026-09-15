@@ -8,6 +8,8 @@ import './Divination.print.css';
 import { getAIProvider } from '../services/aiProviderFactory';
 import { ChatMessage } from '../services/aiProvider';
 import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveSettings } from '../services/storage';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
     Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight,
     HelpCircle, Eye, X, BookOpen,
@@ -15,7 +17,7 @@ import {
     Compass, Zap, Globe, MessageSquarePlus, Send,
     ChevronDown, Ban,
     ShieldCheck, MapPin, UserCheck,
-    Feather, Cpu, SlidersHorizontal, Download
+    Feather, Cpu, SlidersHorizontal, Download, Image as ImageIcon
 } from 'lucide-react';
 
 
@@ -51,6 +53,8 @@ const Divination: React.FC = () => {
   const [readingStyle, setReadingStyle] = useState(getSettings().readingStyle);
   const [aiModel, setAiModel] = useState(getSettings().aiModel);
   const [showStyleSelector, setShowStyleSelector] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleModelChange = (model: AIModel) => {
     setAiModel(model);
@@ -296,51 +300,93 @@ const Divination: React.FC = () => {
     setShuffledDeck([]);
   }, []);
 
-  const handleExportReport = () => {
-    // 检测是否为移动设备
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const handleExportReport = async (format: 'pdf' | 'image' | 'print') => {
+    setIsExporting(true);
+    setShowExportMenu(false);
 
-    if (isMobile) {
-      // 移动端：提示用户使用浏览器的分享功能
-      alert('移动端导出提示：\n\n请点击浏览器菜单中的"打印"或"生成PDF"功能来保存报告。\n\n如果浏览器不支持，建议使用电脑端访问后导出。');
-    }
+    try {
+      const reportElement = document.querySelector('.print-report') as HTMLElement;
+      if (!reportElement) {
+        alert('找不到报告内容');
+        return;
+      }
 
-    // 确保所有图片加载完成后再打印
-    const images = document.querySelectorAll('.print-report img');
-    const imagePromises = Array.from(images).map((img: any) => {
-      if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.onload = resolve;
-        img.onerror = resolve; // 即使图片加载失败也继续
-      });
-    });
-
-    Promise.all(imagePromises).then(() => {
-      const originalTitle = document.title;
       const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
-      document.title = 'Lumina-' + (selectedSpread?.name || '塔罗占卜') + '-' + date;
+      const filename = `Lumina-${selectedSpread?.name || '塔罗占卜'}-${date}`;
 
-      const restoreTitle = () => {
-        document.title = originalTitle;
-        window.removeEventListener('afterprint', restoreTitle);
-      };
+      if (format === 'image') {
+        // 导出为图片
+        const canvas = await html2canvas(reportElement, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
 
-      window.addEventListener('afterprint', restoreTitle);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${filename}.png`;
+            link.click();
+            URL.revokeObjectURL(url);
 
-      try {
+            // 通知引导
+            if ((window as any).notifyGuideAction) {
+              setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+            }
+          }
+        });
+
+      } else if (format === 'pdf') {
+        // 导出为PDF
+        const canvas = await html2canvas(reportElement, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+
+        const imgWidth = 210; // A4宽度（mm）
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/png');
+
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`${filename}.pdf`);
+
+        // 通知引导
+        if ((window as any).notifyGuideAction) {
+          setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+        }
+
+      } else if (format === 'print') {
+        // 使用浏览器打印
+        const originalTitle = document.title;
+        document.title = filename;
+
+        const restoreTitle = () => {
+          document.title = originalTitle;
+          window.removeEventListener('afterprint', restoreTitle);
+        };
+
+        window.addEventListener('afterprint', restoreTitle);
         window.print();
-      } catch (error) {
-        console.error('打印功能出错:', error);
-        if (isMobile) {
-          alert('抱歉，您的浏览器可能不支持此功能。建议使用 Chrome 或 Safari 浏览器，或在电脑端访问。');
+
+        // 通知引导
+        if ((window as any).notifyGuideAction) {
+          setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
         }
       }
 
-      // 通知引导：已导出报告
-      if ((window as any).notifyGuideAction) {
-        setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
-      }
-    });
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败，请重试');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -567,14 +613,64 @@ const Divination: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full md:w-auto">
-                    <button
-                        onClick={handleExportReport}
-                        disabled={!aiInterpretation || isLoadingAI}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-6 md:px-10 py-4 md:py-5 bg-gradient-to-tr from-mystic-gold to-yellow-600 hover:from-mystic-gold/90 hover:to-yellow-600/90 text-mystic-950 rounded-2xl text-[11px] font-bold uppercase tracking-[0.25em] transition-all group active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-mystic-gold/20"
-                        title={aiInterpretation ? '导出完整占卜报告（PDF）' : 'AI 解读完成后可导出'}
-                    >
-                        <Download size={16} className="group-hover:translate-y-0.5 transition-transform" /> 导出报告
-                    </button>
+                    <div className="relative flex-1 md:flex-none">
+                      <button
+                          onClick={() => setShowExportMenu(!showExportMenu)}
+                          disabled={!aiInterpretation || isLoadingAI || isExporting}
+                          className="w-full flex items-center justify-center gap-2 md:gap-3 px-6 md:px-10 py-4 md:py-5 bg-gradient-to-tr from-mystic-gold to-yellow-600 hover:from-mystic-gold/90 hover:to-yellow-600/90 text-mystic-950 rounded-2xl text-[11px] font-bold uppercase tracking-[0.25em] transition-all group active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-mystic-gold/20"
+                          title={aiInterpretation ? '导出完整占卜报告' : 'AI 解读完成后可导出'}
+                      >
+                          {isExporting ? (
+                            <>正在导出...</>
+                          ) : (
+                            <>
+                              <Download size={16} className="group-hover:translate-y-0.5 transition-transform" /> 导出报告
+                            </>
+                          )}
+                      </button>
+
+                      {/* 导出选项下拉菜单 */}
+                      {showExportMenu && aiInterpretation && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-[90]"
+                            onClick={() => setShowExportMenu(false)}
+                          />
+                          <div className="absolute right-0 top-full mt-2 w-56 bg-mystic-900 border border-white/20 rounded-2xl shadow-2xl overflow-hidden z-[100]">
+                            <button
+                              onClick={() => handleExportReport('image')}
+                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3"
+                            >
+                              <ImageIcon size={18} className="text-mystic-gold" />
+                              <div>
+                                <div className="font-bold">下载为图片</div>
+                                <div className="text-xs text-slate-500 mt-0.5">PNG格式，高清保存</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => handleExportReport('pdf')}
+                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3 border-t border-white/5"
+                            >
+                              <Download size={18} className="text-indigo-400" />
+                              <div>
+                                <div className="font-bold">下载为PDF</div>
+                                <div className="text-xs text-slate-500 mt-0.5">PDF格式，便于打印</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => handleExportReport('print')}
+                              className="w-full px-5 py-4 text-left text-sm text-slate-300 hover:bg-white/10 hover:text-white transition flex items-center gap-3 border-t border-white/5"
+                            >
+                              <Feather size={18} className="text-purple-400" />
+                              <div>
+                                <div className="font-bold">浏览器打印</div>
+                                <div className="text-xs text-slate-500 mt-0.5">使用系统打印功能</div>
+                              </div>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                     <button onClick={reset} className="flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95">
                         <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 开启新占卜
                     </button>

@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.562.0",
     "motion": "^12.38.0",
     "react": "^19.2.3",
