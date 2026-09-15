@@ -318,12 +318,12 @@ const Divination: React.FC = () => {
       // 临时显示报告以便截图
       reportElement.style.opacity = '1';
       reportElement.style.zIndex = '9999';
-      await new Promise(resolve => setTimeout(resolve, 500)); // 增加等待时间确保渲染
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       if (format === 'pdf') {
-        // 使用 jsPDF + html2canvas 手动分页
+        // 截取整个内容
         const canvas = await html2canvas(reportElement, {
-          scale: 1.5, // 降低scale减小文件大小
+          scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
@@ -332,29 +332,26 @@ const Divination: React.FC = () => {
         });
 
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = 210;
-        const pageHeight = 297;
-        const margin = 14;
-        const contentWidth = pageWidth - 2 * margin;
-        const contentHeight = pageHeight - 2 * margin;
+        const pdfWidth = 210; // A4宽度 mm
+        const pdfHeight = 297; // A4高度 mm
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.90); // JPEG 90%质量
-        const imgWidth = contentWidth;
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        // 计算图片在PDF中的实际尺寸
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        let heightLeft = imgHeight;
-        let position = 0;
+        // 按A4页面高度切分
+        const pageHeight = pdfHeight;
+        let yOffset = 0;
 
         // 第一页
-        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-        heightLeft -= contentHeight;
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, imgWidth, imgHeight);
+        yOffset += pageHeight;
 
-        // 添加更多页
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
+        // 如果内容超过一页，继续添加
+        while (yOffset < imgHeight) {
           pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
-          heightLeft -= contentHeight;
+          pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, -yOffset, imgWidth, imgHeight);
+          yOffset += pageHeight;
         }
 
         pdf.save(`${filename}.pdf`);
@@ -364,7 +361,6 @@ const Divination: React.FC = () => {
         }
 
       } else if (format === 'image') {
-        // 导出为图片
         const canvas = await html2canvas(reportElement, {
           scale: 2,
           useCORS: true,
@@ -398,7 +394,6 @@ const Divination: React.FC = () => {
       console.error('导出失败:', error);
       alert('导出失败：' + (error as Error).message + '\n请重试或使用"下载为图片"选项');
 
-      // 确保恢复隐藏
       const reportElement = document.querySelector('.print-report') as HTMLElement;
       if (reportElement) {
         reportElement.style.opacity = '0';
