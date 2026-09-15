@@ -297,6 +297,14 @@ const Divination: React.FC = () => {
   }, []);
 
   const handleExportReport = () => {
+    // 检测是否为移动设备
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // 移动端：提示用户使用浏览器的分享功能
+      alert('移动端导出提示：\n\n请点击浏览器菜单中的"打印"或"生成PDF"功能来保存报告。\n\n如果浏览器不支持，建议使用电脑端访问后导出。');
+    }
+
     // 确保所有图片加载完成后再打印
     const images = document.querySelectorAll('.print-report img');
     const imagePromises = Array.from(images).map((img: any) => {
@@ -318,7 +326,15 @@ const Divination: React.FC = () => {
       };
 
       window.addEventListener('afterprint', restoreTitle);
-      window.print();
+
+      try {
+        window.print();
+      } catch (error) {
+        console.error('打印功能出错:', error);
+        if (isMobile) {
+          alert('抱歉，您的浏览器可能不支持此功能。建议使用 Chrome 或 Safari 浏览器，或在电脑端访问。');
+        }
+      }
 
       // 通知引导：已导出报告
       if ((window as any).notifyGuideAction) {
