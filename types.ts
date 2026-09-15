@@ -134,7 +134,6 @@ export enum ReadingStyle {
 export enum AIModel {
   Gemini = 'gemini',
   DeepSeek = 'deepseek',
-  Kimi = 'kimi',
   Qwen = 'qwen',
   Doubao = 'doubao',
   Claude = 'claude',

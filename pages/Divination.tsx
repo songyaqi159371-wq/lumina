@@ -7,15 +7,15 @@ import CardFlip from '../components/CardFlip';
 import './Divination.print.css';
 import { getAIProvider } from '../services/aiProviderFactory';
 import { ChatMessage } from '../services/aiProvider';
-import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveSettings, saveHistory, getHistory, updateHistoryItem } from '../services/storage';
-import { 
-    Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight, 
-    HelpCircle, Eye, X, BookOpen, 
+import { saveActiveSession, getActiveSession, clearActiveSession, getSettings, saveSettings } from '../services/storage';
+import {
+    Sparkles, BrainCircuit, RefreshCw, Layers, ChevronRight,
+    HelpCircle, Eye, X, BookOpen,
     Info, ShieldAlert,
     Compass, Zap, Globe, MessageSquarePlus, Send,
     ChevronDown, Ban,
     ShieldCheck, MapPin, UserCheck,
-    Feather, Cpu, Save, CheckCircle2, SlidersHorizontal, Download
+    Feather, Cpu, SlidersHorizontal, Download
 } from 'lucide-react';
 
 
@@ -64,7 +64,6 @@ const Divination: React.FC = () => {
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
 
   // 1. 初始化恢复会话
   useEffect(() => {
@@ -122,17 +121,26 @@ const Divination: React.FC = () => {
   const handleSpreadSelect = (spread: Spread) => {
     setSelectedSpread(spread);
     setStep('input');
+    // 通知引导：已选择牌阵
+    if ((window as any).notifyGuideAction) {
+      setTimeout(() => (window as any).notifyGuideAction('spreadSelect'), 300);
+    }
   };
 
   const startDrawing = () => {
     if (!question.trim()) return;
-    
+
     // 在进入抽牌环节前进行彻底洗牌
     const initialDeck = Array.from({ length: 78 }, (_, i) => i);
     setShuffledDeck(shuffleArray(initialDeck));
-    
+
     setPickedIndices([]);
     setStep('drawing');
+
+    // 通知引导：已输入问题并开始抽牌
+    if ((window as any).notifyGuideAction) {
+      setTimeout(() => (window as any).notifyGuideAction('questionInput'), 500);
+    }
   };
 
   const handlePickCard = (deckIndex: number, actualCardId: number) => {
@@ -157,13 +165,27 @@ const Divination: React.FC = () => {
             setDrawnCards(finalDrawn);
             setStep('result');
             setRevealedIndices([]);
+
+            // 通知引导：抽牌完成
+            if ((window as any).notifyGuideAction) {
+              setTimeout(() => (window as any).notifyGuideAction('drawComplete'), 1000);
+            }
         }, 800);
     }
   };
 
   const handleCardClick = (index: number) => {
     if (!revealedIndices.includes(index)) {
-        setRevealedIndices([...revealedIndices, index]);
+        const newRevealed = [...revealedIndices, index];
+        setRevealedIndices(newRevealed);
+
+        // 检查是否所有卡牌都已翻开
+        if (newRevealed.length === drawnCards.length) {
+          // 通知引导：所有卡牌已翻开
+          if ((window as any).notifyGuideAction) {
+            setTimeout(() => (window as any).notifyGuideAction('cardsRevealed'), 500);
+          }
+        }
     } else {
         const drawn = drawnCards[index];
         const card = tarotDeck.find(c => c.id === drawn.cardId);
@@ -205,6 +227,11 @@ const Divination: React.FC = () => {
         // 收尾：以最终全文为准（兼容回退到非流式、或部分块丢失的情况）
         setAiInterpretation(result);
         setChatHistory([userMsg, { role: 'model', parts: [{ text: result }] }]);
+
+        // 通知引导：AI 解读已生成
+        if ((window as any).notifyGuideAction) {
+          setTimeout(() => (window as any).notifyGuideAction('aiGenerated'), 500);
+        }
     } catch (e) {
         console.error(e);
         setAiInterpretation("解读过程中遇到了一些波折，请检查网络连接或稍后再试。");
@@ -245,12 +272,6 @@ const Divination: React.FC = () => {
             { role: 'model', parts: [{ text: responseText }] }
         ];
         setChatHistory(finalHistory);
-
-        // If already saved to history, update it automatically
-        const history = getHistory();
-        if (history.some(item => item.id === sessionId)) {
-            updateHistoryItem(sessionId, { chatHistory: finalHistory });
-        }
     } catch (error) {
         console.error(error);
     } finally {
@@ -273,40 +294,37 @@ const Divination: React.FC = () => {
     setDetailedCard(null);
     setIsLoadingAI(false);
     setShuffledDeck([]);
-    setIsSaved(false);
   }, []);
 
-  const handleSaveResult = () => {
-    if (!selectedSpread || drawnCards.length === 0) return;
-    
-    const record = {
-      id: sessionId,
-      date: new Date().toISOString(),
-      question,
-      spreadId: selectedSpread.id,
-      cards: drawnCards,
-      aiInterpretation,
-      chatHistory,
-      readingStyle
-    };
-    
-    saveHistory(record);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
-  };
-
   const handleExportReport = () => {
-    const originalTitle = document.title;
-    const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
-    document.title = 'Lumina-' + (selectedSpread?.name || '塔罗占卜') + '-' + date;
+    // 确保所有图片加载完成后再打印
+    const images = document.querySelectorAll('.print-report img');
+    const imagePromises = Array.from(images).map((img: any) => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve; // 即使图片加载失败也继续
+      });
+    });
 
-    const restoreTitle = () => {
-      document.title = originalTitle;
-      window.removeEventListener('afterprint', restoreTitle);
-    };
+    Promise.all(imagePromises).then(() => {
+      const originalTitle = document.title;
+      const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+      document.title = 'Lumina-' + (selectedSpread?.name || '塔罗占卜') + '-' + date;
 
-    window.addEventListener('afterprint', restoreTitle);
-    window.print();
+      const restoreTitle = () => {
+        document.title = originalTitle;
+        window.removeEventListener('afterprint', restoreTitle);
+      };
+
+      window.addEventListener('afterprint', restoreTitle);
+      window.print();
+
+      // 通知引导：已导出报告
+      if ((window as any).notifyGuideAction) {
+        setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
+      }
+    });
   };
 
   return (
@@ -320,9 +338,9 @@ const Divination: React.FC = () => {
             <p className="text-slate-500 font-light max-w-lg mx-auto leading-relaxed italic">开启与潜意识的对话</p>
           </div>
 
-          <div className="max-w-3xl mx-auto mb-16">
+          <div className="max-w-3xl mx-auto mb-16 protocols-section">
             <div className={`transition-all duration-300 border border-white/10 rounded-2xl overflow-hidden bg-white/5`}>
-                <button 
+                <button
                     onClick={() => setIsProtocolsOpen(!isProtocolsOpen)}
                     className="w-full flex items-center justify-between px-8 py-5 transition-all group hover:bg-white/5"
                 >
@@ -403,9 +421,9 @@ const Divination: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 spread-cards">
             {spreads.map(spread => (
-                <div 
+                <div
                     key={spread.id}
                     onClick={() => handleSpreadSelect(spread)}
                     className="glass-card p-8 rounded-[2rem] cursor-pointer group hover:bg-white/[0.03]"
@@ -536,26 +554,10 @@ const Divination: React.FC = () => {
                     <button
                         onClick={handleExportReport}
                         disabled={!aiInterpretation || isLoadingAI}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 bg-mystic-gold/10 border border-mystic-gold/30 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-mystic-gold hover:bg-mystic-gold/20 transition group active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
-                        title={aiInterpretation ? '导出完整占卜报告' : 'AI 解读完成后可导出'}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-6 md:px-10 py-4 md:py-5 bg-gradient-to-tr from-mystic-gold to-yellow-600 hover:from-mystic-gold/90 hover:to-yellow-600/90 text-mystic-950 rounded-2xl text-[11px] font-bold uppercase tracking-[0.25em] transition-all group active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-mystic-gold/20"
+                        title={aiInterpretation ? '导出完整占卜报告（PDF）' : 'AI 解读完成后可导出'}
                     >
-                        <Download size={14} className="group-hover:translate-y-0.5 transition-transform" /> 导出报告
-                    </button>
-                    <button
-                        onClick={handleSaveResult}
-                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 border rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition group active:scale-95 ${
-                            isSaved ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                        }`}
-                    >
-                        {isSaved ? (
-                            <>
-                                <CheckCircle2 size={14} className="text-emerald-400" /> 已保存
-                            </>
-                        ) : (
-                            <>
-                                <Save size={14} className="group-hover:scale-110 transition-transform" /> 保存占卜
-                            </>
-                        )}
+                        <Download size={16} className="group-hover:translate-y-0.5 transition-transform" /> 导出报告
                     </button>
                     <button onClick={reset} className="flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-3 px-5 md:px-8 py-3.5 md:py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-white transition group active:scale-95">
                         <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-700"/> 开启新占卜
@@ -639,7 +641,6 @@ const Divination: React.FC = () => {
                             {/* 暂时隐藏 Gemini，后续需要时取消注释即可恢复 */}
                             {/* <option value={AIModel.Gemini}>Gemini</option> */}
                             <option value={AIModel.DeepSeek}>DeepSeek</option>
-                            <option value={AIModel.Kimi}>Kimi</option>
                             <option value={AIModel.Qwen}>通义千问</option>
                             {/* 暂时隐藏 豆包，后续需要时取消注释即可恢复 */}
                             {/* <option value={AIModel.Doubao}>豆包</option> */}
@@ -831,6 +832,7 @@ const Divination: React.FC = () => {
                                               src={getCardImageUrl(card.id)}
                                               alt={card.nameEn}
                                               className={draw.isReversed ? 'print-report-reversed' : ''}
+                                              referrerPolicy="no-referrer"
                                           />
                                       </div>
                                       <h3>{card.nameCn}</h3>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Home, Menu, X, Feather, Sparkle, Eye, History } from 'lucide-react';
+import { BookOpen, Home, Menu, X, Feather, Sparkle, Eye } from 'lucide-react';
+import { GuideHelpButton } from './Guide';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,7 +16,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/learn', label: '图鉴', icon: BookOpen },
     { path: '/symbols', label: '象征', icon: Sparkle },
     { path: '/divine', label: '占卜', icon: Eye },
-    { path: '/history', label: '档案', icon: History },
   ];
 
   return (
@@ -26,9 +26,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Feather className="text-mystic-gold w-6 h-6" />
             <h1 className="text-xl font-serif text-mystic-gold font-bold tracking-widest uppercase">Lumina</h1>
         </div>
-        <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 text-white">
-          {isSidebarOpen ? <X /> : <Menu />}
-        </button>
+        <div className="flex items-center gap-1">
+          <GuideHelpButton />
+          <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 text-white">
+            {isSidebarOpen ? <X /> : <Menu />}
+          </button>
+        </div>
       </div>
 
       <div className="flex h-screen overflow-hidden relative">
@@ -40,11 +43,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           `}
         >
-          <div className="p-10 hidden lg:flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-mystic-600 to-mystic-400 flex items-center justify-center shadow-[0_0_20px_rgba(109,40,217,0.3)]">
-                <Feather className="text-mystic-gold w-6 h-6" />
+          <div className="p-10 hidden lg:flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-mystic-600 to-mystic-400 flex items-center justify-center shadow-[0_0_20px_rgba(109,40,217,0.3)]">
+                  <Feather className="text-mystic-gold w-6 h-6" />
+              </div>
+              <h1 className="text-2xl font-serif text-white font-bold tracking-tighter uppercase italic">Lumina</h1>
             </div>
-            <h1 className="text-2xl font-serif text-white font-bold tracking-tighter uppercase italic">Lumina</h1>
           </div>
 
           <nav className="mt-8 px-6 space-y-4">
@@ -71,8 +76,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             })}
           </nav>
 
-           <div className="absolute bottom-10 w-full px-10">
-               <div className="text-[10px] text-slate-500 font-serif tracking-widest leading-relaxed uppercase opacity-40">
+           <div className="absolute bottom-10 left-6 right-6">
+               <GuideHelpButton />
+               <div className="text-[10px] text-slate-500 font-serif tracking-widest leading-relaxed uppercase opacity-40 mt-6">
                    Established 2025<br/>
                    Divine Intelligence
                </div>
