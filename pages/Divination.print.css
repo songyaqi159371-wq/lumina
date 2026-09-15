@@ -1,12 +1,15 @@
 .print-report {
-  position: fixed;
-  left: -9999px;
+  position: absolute;
+  left: 0;
   top: 0;
   width: 210mm;
   background: #ffffff;
   padding: 14mm;
   color: #1f2937;
   font-family: "Inter", "Microsoft YaHei", sans-serif;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .print-report-header {

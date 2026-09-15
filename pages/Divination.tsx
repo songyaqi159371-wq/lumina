@@ -314,16 +314,13 @@ const Divination: React.FC = () => {
       const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
       const filename = `Lumina-${selectedSpread?.name || '塔罗占卜'}-${date}`;
 
+      // 临时显示报告以便截图
+      reportElement.style.opacity = '1';
+      reportElement.style.zIndex = '9999';
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       if (format === 'pdf') {
-        // 临时显示报告
-        const originalPosition = reportElement.style.position;
-        const originalLeft = reportElement.style.left;
-        reportElement.style.position = 'absolute';
-        reportElement.style.left = '0';
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // 使用 html2pdf.js 的高级配置
+        // 使用 html2pdf.js
         const opt = {
           margin: [14, 14, 14, 14],
           filename: `${filename}.pdf`,
@@ -347,12 +344,7 @@ const Divination: React.FC = () => {
           }
         };
 
-        const worker = html2pdf().set(opt).from(reportElement);
-        await worker.save();
-
-        // 恢复位置
-        reportElement.style.position = originalPosition;
-        reportElement.style.left = originalLeft;
+        await html2pdf().set(opt).from(reportElement).save();
 
         if ((window as any).notifyGuideAction) {
           setTimeout(() => (window as any).notifyGuideAction('exported'), 1000);
@@ -360,13 +352,6 @@ const Divination: React.FC = () => {
 
       } else if (format === 'image') {
         // 导出为图片
-        const originalPosition = reportElement.style.position;
-        const originalLeft = reportElement.style.left;
-        reportElement.style.position = 'absolute';
-        reportElement.style.left = '0';
-
-        await new Promise(resolve => setTimeout(resolve, 100));
-
         const canvas = await html2canvas(reportElement, {
           scale: 2,
           useCORS: true,
@@ -375,9 +360,6 @@ const Divination: React.FC = () => {
           windowHeight: reportElement.scrollHeight,
           height: reportElement.scrollHeight
         });
-
-        reportElement.style.position = originalPosition;
-        reportElement.style.left = originalLeft;
 
         canvas.toBlob((blob) => {
           if (blob) {
@@ -395,9 +377,20 @@ const Divination: React.FC = () => {
         }, 'image/png', 0.95);
       }
 
+      // 恢复隐藏
+      reportElement.style.opacity = '0';
+      reportElement.style.zIndex = '-1';
+
     } catch (error) {
       console.error('导出失败:', error);
       alert('导出失败，请重试');
+
+      // 确保恢复隐藏
+      const reportElement = document.querySelector('.print-report') as HTMLElement;
+      if (reportElement) {
+        reportElement.style.opacity = '0';
+        reportElement.style.zIndex = '-1';
+      }
     } finally {
       setIsExporting(false);
     }
