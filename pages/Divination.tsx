@@ -320,11 +320,17 @@ const Divination: React.FC = () => {
       reportElement.style.zIndex = '9999';
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      // 检测是否为移动端
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const exportScale = isMobile ? 1.5 : 2; // 移动端降低scale
+      const exportQuality = isMobile ? 0.75 : 0.85; // 移动端降低质量
+
       if (format === 'pdf') {
         // 截取整个内容
         const canvas = await html2canvas(reportElement, {
-          scale: 2,
+          scale: exportScale,
           useCORS: true,
+          allowTaint: true, // 允许跨域图片
           logging: false,
           backgroundColor: '#ffffff',
           windowHeight: reportElement.scrollHeight,
@@ -332,25 +338,23 @@ const Divination: React.FC = () => {
         });
 
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = 210; // A4宽度 mm
-        const pdfHeight = 297; // A4高度 mm
+        const pdfWidth = 210;
+        const pdfHeight = 297;
 
-        // 计算图片在PDF中的实际尺寸
         const imgWidth = pdfWidth;
         const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        // 按A4页面高度切分
         const pageHeight = pdfHeight;
         let yOffset = 0;
 
         // 第一页
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(canvas.toDataURL('image/jpeg', exportQuality), 'JPEG', 0, 0, imgWidth, imgHeight);
         yOffset += pageHeight;
 
         // 如果内容超过一页，继续添加
         while (yOffset < imgHeight) {
           pdf.addPage();
-          pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, -yOffset, imgWidth, imgHeight);
+          pdf.addImage(canvas.toDataURL('image/jpeg', exportQuality), 'JPEG', 0, -yOffset, imgWidth, imgHeight);
           yOffset += pageHeight;
         }
 
@@ -362,8 +366,9 @@ const Divination: React.FC = () => {
 
       } else if (format === 'image') {
         const canvas = await html2canvas(reportElement, {
-          scale: 2,
+          scale: exportScale,
           useCORS: true,
+          allowTaint: true,
           logging: false,
           backgroundColor: '#ffffff',
           windowHeight: reportElement.scrollHeight,
@@ -392,7 +397,17 @@ const Divination: React.FC = () => {
 
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败：' + (error as Error).message + '\n请重试或使用"下载为图片"选项');
+
+      // 移动端提供备选方案
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        const useFallback = confirm('移动端导出遇到问题。\n\n是否使用浏览器打印功能？\n（点击"确定"将打开打印预览，可另存为PDF）');
+        if (useFallback) {
+          window.print();
+        }
+      } else {
+        alert('导出失败：' + (error as Error).message + '\n\n建议使用"下载为图片"选项或浏览器打印功能。');
+      }
 
       const reportElement = document.querySelector('.print-report') as HTMLElement;
       if (reportElement) {
