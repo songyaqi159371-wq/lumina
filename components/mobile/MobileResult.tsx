@@ -1,5 +1,5 @@
-import React from 'react';
-import { Share2, Download, Sparkles, RefreshCw } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Download, Sparkles, RefreshCw, Send } from 'lucide-react';
 import { TarotCard, Spread, AIModel } from '../../types';
 import CardFlip from '../CardFlip';
 
@@ -12,11 +12,13 @@ interface MobileResultProps {
   aiInterpretation: string;
   isLoadingAI: boolean;
   onAIRequest: () => void;
-  onShare: () => void;
   onExport: () => void;
   onRestart: () => void;
   aiModel?: AIModel;
   onModelChange?: (model: AIModel) => void;
+  chatHistory?: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }>;
+  onFollowUp?: (text: string) => void;
+  isSendingFollowUp?: boolean;
 }
 
 const MobileResult: React.FC<MobileResultProps> = ({
@@ -28,13 +30,28 @@ const MobileResult: React.FC<MobileResultProps> = ({
   aiInterpretation,
   isLoadingAI,
   onAIRequest,
-  onShare,
   onExport,
   onRestart,
   aiModel,
   onModelChange,
+  chatHistory = [],
+  onFollowUp,
+  isSendingFollowUp = false,
 }) => {
   const allRevealed = revealedIndices.length === drawnCards.length;
+  const [followUpText, setFollowUpText] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
+  const handleSendFollowUp = () => {
+    if (followUpText.trim() && onFollowUp) {
+      onFollowUp(followUpText);
+      setFollowUpText('');
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-mystic-950">
@@ -48,20 +65,12 @@ const MobileResult: React.FC<MobileResultProps> = ({
               {selectedSpread.name}
             </span>
           </div>
-          <div className="flex gap-1">
-            <button
-              onClick={onShare}
-              className="p-2 hover:bg-white/5 rounded-lg transition active:scale-95"
-            >
-              <Share2 size={18} className="text-slate-400" />
-            </button>
-            <button
-              onClick={onExport}
-              className="p-2 hover:bg-white/5 rounded-lg transition active:scale-95"
-            >
-              <Download size={18} className="text-slate-400" />
-            </button>
-          </div>
+          <button
+            onClick={onExport}
+            className="p-2 hover:bg-white/5 rounded-lg transition active:scale-95"
+          >
+            <Download size={18} className="text-slate-400" />
+          </button>
         </div>
 
         {/* 问题回顾 */}
@@ -74,36 +83,36 @@ const MobileResult: React.FC<MobileResultProps> = ({
       </div>
 
       {/* 主内容滚动区 */}
-      <div className="flex-1 px-4 py-6 space-y-6">
-        {/* 卡牌排列 - 缩小尺寸防止重叠和超出 */}
+      <div className="flex-1 px-4 py-6 space-y-6 pb-32">
+        {/* 卡牌排列 - 大幅缩小尺寸 */}
         <div className={`flex flex-wrap justify-center ${
           drawnCards.length === 1 ? 'gap-0' :
-          drawnCards.length === 2 ? 'gap-3' :
+          drawnCards.length === 2 ? 'gap-2' :
           drawnCards.length === 3 ? 'gap-2' :
-          drawnCards.length === 4 ? 'gap-2' :
-          drawnCards.length <= 6 ? 'gap-2' :
-          drawnCards.length <= 9 ? 'gap-2' :
-          drawnCards.length === 10 ? 'gap-1.5' :
-          'gap-2'
+          drawnCards.length === 4 ? 'gap-1.5' :
+          drawnCards.length <= 6 ? 'gap-1.5' :
+          drawnCards.length <= 9 ? 'gap-1.5' :
+          drawnCards.length === 10 ? 'gap-1' :
+          'gap-1.5'
         }`}>
           {drawnCards.map((card, index) => {
             const isRevealed = revealedIndices.includes(index);
 
-            // 根据卡牌数量动态计算宽度
-            const cardWidth = drawnCards.length === 1 ? 'w-24' :
-                             drawnCards.length === 2 ? 'w-32' :
-                             drawnCards.length === 3 ? 'w-24' :
-                             drawnCards.length === 4 ? 'w-20' :
-                             drawnCards.length <= 6 ? 'w-24' :
-                             drawnCards.length <= 9 ? 'w-20' :
-                             drawnCards.length === 10 ? 'w-16' :
-                             'w-20';
+            // 大幅缩小卡牌尺寸
+            const cardWidth = drawnCards.length === 1 ? 'w-20' :
+                             drawnCards.length === 2 ? 'w-24' :
+                             drawnCards.length === 3 ? 'w-[72px]' :
+                             drawnCards.length === 4 ? 'w-16' :
+                             drawnCards.length <= 6 ? 'w-20' :
+                             drawnCards.length <= 9 ? 'w-16' :
+                             drawnCards.length === 10 ? 'w-14' :
+                             'w-16';
 
             return (
-              <div key={index} className="flex flex-col items-center space-y-1.5" style={{ width: drawnCards.length === 1 ? '96px' : drawnCards.length === 2 ? '128px' : drawnCards.length === 3 ? '96px' : '80px' }}>
+              <div key={index} className="flex flex-col items-center space-y-1">
                 {/* 位置标签 */}
-                <div className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded-full">
-                  <span className="text-[7px] text-slate-400 uppercase tracking-wide truncate block text-center" style={{ maxWidth: '100%' }}>
+                <div className="px-1 py-0.5 bg-white/5 border border-white/10 rounded-full">
+                  <span className="text-[6px] text-slate-400 uppercase tracking-wide truncate block text-center" style={{ maxWidth: '70px' }}>
                     {card.positionName}
                   </span>
                 </div>
@@ -176,11 +185,40 @@ const MobileResult: React.FC<MobileResultProps> = ({
                 </div>
               </div>
             )}
+
+            {/* 聊天历史 */}
+            {chatHistory.length > 0 && (
+              <div className="space-y-3 mt-4">
+                {chatHistory.filter(msg => msg.role === 'model' || msg.parts[0].text !== `请解读牌阵。问题是：${question}`).map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl p-3 ${
+                      msg.role === 'user'
+                        ? 'bg-mystic-gold/10 border border-mystic-gold/30 text-white'
+                        : 'bg-white/5 border border-white/10 text-slate-300'
+                    }`}>
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap">{msg.parts[0].text}</div>
+                    </div>
+                  </div>
+                ))}
+                {isSendingFollowUp && (
+                  <div className="flex justify-start">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-mystic-gold rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            )}
           </div>
         )}
 
         {/* 重新开始按钮 */}
-        <div className="pt-4">
+        <div className="pt-4 pb-20">
           <button
             onClick={onRestart}
             className="w-full bg-white/5 border border-white/10 text-white font-medium py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-98"
@@ -190,6 +228,30 @@ const MobileResult: React.FC<MobileResultProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 固定底部追问输入框 */}
+      {aiInterpretation && onFollowUp && (
+        <div className="fixed bottom-0 left-0 right-0 bg-mystic-950/95 backdrop-blur-xl border-t border-white/10 p-4 pb-safe">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={followUpText}
+              onChange={(e) => setFollowUpText(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendFollowUp()}
+              placeholder="继续追问..."
+              disabled={isSendingFollowUp}
+              className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-mystic-gold/50 disabled:opacity-50"
+            />
+            <button
+              onClick={handleSendFollowUp}
+              disabled={!followUpText.trim() || isSendingFollowUp}
+              className="bg-mystic-gold text-mystic-950 rounded-xl px-4 py-3 font-bold disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition"
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

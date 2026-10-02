@@ -257,11 +257,11 @@ const Divination: React.FC = () => {
 
   const handleSendFollowUp = async () => {
     if (!followUpText.trim() || isSendingFollowUp) return;
-    
+
     const userMsg = followUpText.trim();
     setFollowUpText('');
     setIsSendingFollowUp(true);
-    
+
     const updatedHistory: ChatMessage[] = [
         ...chatHistory,
         { role: 'user', parts: [{ text: userMsg }] }
@@ -275,6 +275,43 @@ const Divination: React.FC = () => {
         const onDelta = (chunk: string) => {
             acc += chunk;
             // 首块到达即停止"感应中"动画，开始打字机式渲染助手回复
+            if (!started) {
+                started = true;
+                setIsSendingFollowUp(false);
+            }
+            setChatHistory([...updatedHistory, { role: 'model', parts: [{ text: acc }] }]);
+        };
+        const responseText = await provider.continueReadingStream(updatedHistory, readingStyle, onDelta);
+        const finalHistory: ChatMessage[] = [
+            ...updatedHistory,
+            { role: 'model', parts: [{ text: responseText }] }
+        ];
+        setChatHistory(finalHistory);
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setIsSendingFollowUp(false);
+    }
+  };
+
+  // 移动端追问函数
+  const handleFollowUp = async (text: string) => {
+    if (!text.trim() || isSendingFollowUp) return;
+
+    setIsSendingFollowUp(true);
+
+    const updatedHistory: ChatMessage[] = [
+        ...chatHistory,
+        { role: 'user', parts: [{ text: text.trim() }] }
+    ];
+    setChatHistory(updatedHistory);
+
+    try {
+        const provider = getAIProvider(aiModel);
+        let acc = '';
+        let started = false;
+        const onDelta = (chunk: string) => {
+            acc += chunk;
             if (!started) {
                 started = true;
                 setIsSendingFollowUp(false);
@@ -1075,15 +1112,9 @@ const Divination: React.FC = () => {
           onAIRequest={handleAIRequest}
           aiModel={aiModel}
           onModelChange={handleModelChange}
-          onShare={() => {
-            if (navigator.share) {
-              navigator.share({
-                title: `我的塔罗占卜 - ${selectedSpread?.name}`,
-                text: `问题：${question}\n\n使用 Lumina Tarot 进行的占卜`,
-                url: window.location.href
-              }).catch(() => {});
-            }
-          }}
+          chatHistory={chatHistory}
+          onFollowUp={handleFollowUp}
+          isSendingFollowUp={isSendingFollowUp}
           onExport={() => handleExportReport('image')}
           onRestart={reset}
         />
