@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-09-27T12:56:31.525Z",
+  "book": "Holistic Tarot",
+  "author": "Benebell Wen",
+  "processing": {
+    "chapters": 431,
+    "chunks": 371,
+    "totalCharacters": 1257746,
+    "avgChunkSize": 3390
+  },
+  "sampleChunks": [
+    {
+      "id": "chunk_0",
+      "preview": "PRAISE FOR HOLISTIC TAROT “A modern masterwork in the analytical tarot canon. The depth of Wen’s research and the breadth of her scope are truly stunning. Her work will sit comfortably on the bookshel...",
+      "metadata": {
+        "book": "holistic_tarot",
+        "layer": "psychological",
+        "chapter": "Chapter 2",
+        "chapterNumber": 2,
+        "cardName": "Swords",
+        "topic": "interpretation",
+        "pageEstimate": 20,
+        "wordCount": 11131,
+        "language": "en"
+      }
+    },
+    {
+      "id": "chunk_1",
+      "preview": "Copyright © 2015 by Benebell Wen. All rights reserved. No portion of this book, except for brief review, may be reproduced, stored in a retrieval system, or transmitted in any form or by any means—ele...",
+      "metadata": {
+        "book": "holistic_tarot",
+        "layer": "psychological",
+        "chapter": "Chapter 4",
+        "chapterNumber": 4,
+        "topic": "interpretation",
+        "pageEstimate": 40,
+        "wordCount": 1703,
+        "language": "en"
+      }
+    },
+    {
+      "id": "chunk_2",
+      "preview": "CONTENTS Cover Title Page Copyright Dedication CHAPTER 1: Tarot Analytics: A Holistic Approach CHAPTER 2: A Concise History Lesson CHAPTER 3: Allaying Fears and Offering Theories From Fear to Understa...",
+      "metadata": {
+        "book": "holistic_tarot",
+        "layer": "psychological",
+        "chapter": "CONTENTS",
+        "chapterNumber": 6,
+        "cardName": "The Fool",
+        "topic": "interpretation",
+        "pageEstimate": 60,
+        "wordCount": 7055,
+        "language": "en"
+      }
+    }
+  ]
+}

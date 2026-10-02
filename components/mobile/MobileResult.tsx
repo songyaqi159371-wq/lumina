@@ -37,9 +37,9 @@ const MobileResult: React.FC<MobileResultProps> = ({
   const allRevealed = revealedIndices.length === drawnCards.length;
 
   return (
-    <div className="flex flex-col min-h-screen bg-mystic-950 pb-20">
-      {/* 顶部固定栏 */}
-      <div className="sticky top-0 z-20 bg-mystic-950/95 backdrop-blur-xl border-b border-white/10">
+    <div className="flex flex-col min-h-screen bg-mystic-950">
+      {/* 顶部标题栏 - 非固定 */}
+      <div className="bg-mystic-950 border-b border-white/10">
         {/* 标题栏 */}
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -74,26 +74,36 @@ const MobileResult: React.FC<MobileResultProps> = ({
       </div>
 
       {/* 主内容滚动区 */}
-      <div className="flex-1 px-3 py-6 space-y-6">
-        {/* 卡牌排列 - 确保不重叠，自适应布局 */}
-        <div className={`grid mx-auto ${
-          drawnCards.length === 1 ? 'grid-cols-1 gap-0 max-w-[90px]' :
-          drawnCards.length === 2 ? 'grid-cols-2 gap-3 max-w-[200px]' :
-          drawnCards.length === 3 ? 'grid-cols-3 gap-2 max-w-[280px]' :
-          drawnCards.length === 4 ? 'grid-cols-4 gap-2' :
-          drawnCards.length <= 6 ? 'grid-cols-3 gap-2' :
-          drawnCards.length <= 9 ? 'grid-cols-3 gap-2' :
-          drawnCards.length === 10 ? 'grid-cols-5 gap-1.5' :
-          'grid-cols-4 gap-2'
+      <div className="flex-1 px-4 py-6 space-y-6">
+        {/* 卡牌排列 - 缩小尺寸防止重叠和超出 */}
+        <div className={`flex flex-wrap justify-center ${
+          drawnCards.length === 1 ? 'gap-0' :
+          drawnCards.length === 2 ? 'gap-3' :
+          drawnCards.length === 3 ? 'gap-2' :
+          drawnCards.length === 4 ? 'gap-2' :
+          drawnCards.length <= 6 ? 'gap-2' :
+          drawnCards.length <= 9 ? 'gap-2' :
+          drawnCards.length === 10 ? 'gap-1.5' :
+          'gap-2'
         }`}>
           {drawnCards.map((card, index) => {
             const isRevealed = revealedIndices.includes(index);
 
+            // 根据卡牌数量动态计算宽度
+            const cardWidth = drawnCards.length === 1 ? 'w-24' :
+                             drawnCards.length === 2 ? 'w-32' :
+                             drawnCards.length === 3 ? 'w-24' :
+                             drawnCards.length === 4 ? 'w-20' :
+                             drawnCards.length <= 6 ? 'w-24' :
+                             drawnCards.length <= 9 ? 'w-20' :
+                             drawnCards.length === 10 ? 'w-16' :
+                             'w-20';
+
             return (
-              <div key={index} className="flex flex-col items-center space-y-1.5">
+              <div key={index} className="flex flex-col items-center space-y-1.5" style={{ width: drawnCards.length === 1 ? '96px' : drawnCards.length === 2 ? '128px' : drawnCards.length === 3 ? '96px' : '80px' }}>
                 {/* 位置标签 */}
                 <div className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded-full">
-                  <span className="text-[7px] text-slate-400 uppercase tracking-wide truncate max-w-[70px] block text-center">
+                  <span className="text-[7px] text-slate-400 uppercase tracking-wide truncate block text-center" style={{ maxWidth: '100%' }}>
                     {card.positionName}
                   </span>
                 </div>
@@ -101,7 +111,7 @@ const MobileResult: React.FC<MobileResultProps> = ({
                 {/* 卡牌 - 点击翻牌 */}
                 <div
                   onClick={() => onCardClick(index)}
-                  className="relative w-full aspect-[2/3] cursor-pointer"
+                  className={`relative ${cardWidth} aspect-[2/3] cursor-pointer`}
                 >
                   <CardFlip
                     card={card}

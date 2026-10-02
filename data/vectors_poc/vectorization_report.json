@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-27T13:25:22.452Z",
+  "model": "text-embedding-ada-002",
+  "processing": {
+    "totalChunks": 371,
+    "processedChunks": 0,
+    "successRate": "0.00%",
+    "totalTimeMinutes": 0.14
+  },
+  "cost": {
+    "estimatedTokens": 503099,
+    "estimatedCost": "0.065",
+    "actualCost": "Check OpenAI dashboard for exact cost"
+  },
+  "output": {
+    "vectorsFile": "./data/vectors_poc/vectors.json",
+    "metadataFile": "./data/vectors_poc/vectors_metadata.json",
+    "vectorDimension": 0
+  }
+}
