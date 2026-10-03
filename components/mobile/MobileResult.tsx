@@ -53,6 +53,11 @@ const MobileResult: React.FC<MobileResultProps> = ({
     }
   };
 
+  const cardCount = drawnCards.length;
+  // Keep every card inside the viewport while preserving enough room for its artwork.
+  const columns = cardCount <= 2 ? cardCount : cardCount <= 6 ? 3 : 4;
+  const cardMaxWidth = cardCount === 1 ? 128 : cardCount === 2 ? 116 : cardCount <= 6 ? 96 : 72;
+
   return (
     <div className="flex flex-col min-h-screen bg-mystic-950">
       {/* 顶部标题栏 - 非固定 */}
@@ -84,32 +89,16 @@ const MobileResult: React.FC<MobileResultProps> = ({
 
       {/* 主内容滚动区 */}
       <div className="flex-1 px-4 py-6 space-y-6 pb-32">
-        {/* 卡牌排列 - 大幅缩小尺寸 */}
-        <div className={`flex flex-wrap justify-center ${
-          drawnCards.length === 1 ? 'gap-0' :
-          drawnCards.length === 2 ? 'gap-2' :
-          drawnCards.length === 3 ? 'gap-2' :
-          drawnCards.length === 4 ? 'gap-1.5' :
-          drawnCards.length <= 6 ? 'gap-1.5' :
-          drawnCards.length <= 9 ? 'gap-1.5' :
-          drawnCards.length === 10 ? 'gap-1' :
-          'gap-1.5'
-        }`}>
+        {/* 卡牌排列：按牌数分列，避免固定宽度造成溢出和重叠 */}
+        <div
+          className="grid w-full justify-items-center gap-x-2 gap-y-4"
+          style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+        >
           {drawnCards.map((card, index) => {
             const isRevealed = revealedIndices.includes(index);
 
-            // 大幅缩小卡牌尺寸
-            const cardWidth = drawnCards.length === 1 ? 'w-20' :
-                             drawnCards.length === 2 ? 'w-24' :
-                             drawnCards.length === 3 ? 'w-[72px]' :
-                             drawnCards.length === 4 ? 'w-16' :
-                             drawnCards.length <= 6 ? 'w-20' :
-                             drawnCards.length <= 9 ? 'w-16' :
-                             drawnCards.length === 10 ? 'w-14' :
-                             'w-16';
-
             return (
-              <div key={index} className="flex flex-col items-center space-y-1">
+              <div key={index} className="flex w-full min-w-0 flex-col items-center space-y-1">
                 {/* 位置标签 */}
                 <div className="px-1 py-0.5 bg-white/5 border border-white/10 rounded-full">
                   <span className="text-[6px] text-slate-400 uppercase tracking-wide truncate block text-center" style={{ maxWidth: '70px' }}>
@@ -120,14 +109,16 @@ const MobileResult: React.FC<MobileResultProps> = ({
                 {/* 卡牌 - 点击翻牌 */}
                 <div
                   onClick={() => onCardClick(index)}
-                  className={`relative ${cardWidth} aspect-[2/3] cursor-pointer`}
+                  className="relative w-full max-w-full aspect-[2/3] cursor-pointer"
+                  style={{ maxWidth: `${cardMaxWidth}px` }}
                 >
                   <CardFlip
                     card={card}
                     isRevealed={isRevealed}
                     isReversed={card.isReversed}
                     onClick={() => {}}
-                    className="w-full h-full"
+                    width="w-full"
+                    height="h-full"
                   />
                 </div>
               </div>

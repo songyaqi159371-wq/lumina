@@ -10,6 +10,7 @@ interface CardFlipProps {
   width?: string;
   height?: string;
   showLabel?: boolean;
+  className?: string;
 }
 
 const CardFlip: React.FC<CardFlipProps> = ({ 
@@ -19,13 +20,14 @@ const CardFlip: React.FC<CardFlipProps> = ({
   onClick,
   width = "w-48",
   height = "h-80",
-  showLabel = true
+  showLabel = true,
+  className = ''
 }) => {
   const imgSrc = card ? getCardImageUrl(card.id) : '';
 
   return (
     <div 
-      className={`relative group perspective-1000 ${width} ${height} cursor-pointer`}
+      className={`relative group perspective-1000 ${width} ${height} ${className} min-w-0 min-h-0 cursor-pointer`}
       onClick={onClick}
     >
       <div 
@@ -60,9 +62,9 @@ const CardFlip: React.FC<CardFlipProps> = ({
                />
                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                {showLabel && (
-                  <div className={`absolute bottom-0 w-full text-center py-4 bg-black/40 backdrop-blur-md border-t border-white/5 ${isReversed ? 'rotate-180' : ''}`}>
-                      <p className="text-mystic-gold font-serif text-[9px] tracking-[0.3em] uppercase opacity-80 mb-0.5">{card.nameEn}</p>
-                      <p className="text-white font-serif text-lg tracking-widest font-bold">{card.nameCn}</p>
+                  <div className={`absolute bottom-0 w-full text-center py-1 sm:py-4 px-0.5 bg-black/40 backdrop-blur-md border-t border-white/5 ${isReversed ? 'rotate-180' : ''}`}>
+                      <p className="text-mystic-gold font-serif text-[clamp(5px,1.8vw,9px)] leading-tight tracking-[0.15em] sm:tracking-[0.3em] uppercase opacity-80 mb-0.5 truncate">{card.nameEn}</p>
+                      <p className="text-white font-serif text-[clamp(9px,3.5vw,1.125rem)] leading-tight tracking-[0.08em] sm:tracking-widest font-bold truncate">{card.nameCn}</p>
                   </div>
                )}
             </div>
