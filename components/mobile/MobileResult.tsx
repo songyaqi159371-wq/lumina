@@ -70,12 +70,21 @@ const MobileResult: React.FC<MobileResultProps> = ({
               {selectedSpread.name}
             </span>
           </div>
-          <button
-            onClick={onExport}
-            className="p-2 hover:bg-white/5 rounded-lg transition active:scale-95"
-          >
-            <Download size={18} className="text-slate-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onRestart}
+              className="p-2 hover:bg-white/5 rounded-lg transition active:scale-95 flex items-center gap-1"
+              title="开启新占卜"
+            >
+              <RefreshCw size={18} className="text-slate-400" />
+            </button>
+            <button
+              onClick={onExport}
+              className="p-2 hover:bg-white/5 rounded-lg transition active:scale-95"
+            >
+              <Download size={18} className="text-slate-400" />
+            </button>
+          </div>
         </div>
 
         {/* 问题回顾 */}
@@ -129,25 +138,47 @@ const MobileResult: React.FC<MobileResultProps> = ({
         {/* AI 解读区 */}
         {allRevealed && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
+            <div className="flex items-center justify-between px-1 gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <Sparkles size={14} className="text-mystic-gold" />
                 <span className="text-sm font-serif text-white">AI 深度解读</span>
               </div>
 
-              {/* AI 模型选择下拉框 */}
-              {onModelChange && aiModel && (
-                <select
-                  value={aiModel}
-                  onChange={(e) => onModelChange(e.target.value as AIModel)}
-                  className="bg-white/10 border border-white/20 text-white font-medium text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-mystic-gold/50 cursor-pointer"
-                >
-                  <option value={AIModel.DeepSeek} className="bg-mystic-950 text-white">DeepSeek</option>
-                  <option value={AIModel.Qwen} className="bg-mystic-950 text-white">通义千问</option>
-                  <option value={AIModel.Claude} className="bg-mystic-950 text-white">Claude</option>
-                  <option value={AIModel.OpenAI} className="bg-mystic-950 text-white">OpenAI</option>
-                </select>
-              )}
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {/* AI 模型选择下拉框 */}
+                {onModelChange && aiModel && (
+                  <select
+                    value={aiModel}
+                    onChange={(e) => onModelChange(e.target.value as AIModel)}
+                    className="bg-white/10 border border-white/20 text-white font-medium text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-mystic-gold/50 cursor-pointer"
+                  >
+                    <option value={AIModel.DeepSeek} className="bg-mystic-950 text-white">DeepSeek</option>
+                    <option value={AIModel.Qwen} className="bg-mystic-950 text-white">通义千问</option>
+                    <option value={AIModel.Claude} className="bg-mystic-950 text-white">Claude</option>
+                    <option value={AIModel.OpenAI} className="bg-mystic-950 text-white">OpenAI</option>
+                  </select>
+                )}
+
+                {/* 重新生成按钮 - 仅在有解读结果时显示 */}
+                {aiInterpretation && !isLoadingAI && onAIRequest && (
+                  <div className="relative group">
+                    <button
+                      onClick={onAIRequest}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/10 border border-white/20 text-white font-medium text-xs rounded-lg hover:bg-white/15 transition active:scale-95"
+                      title="重新生成解读"
+                    >
+                      <RefreshCw size={14} />
+                      <span className="hidden xs:inline">重新生成</span>
+                    </button>
+                    {/* 提示信息 */}
+                    <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-48 p-2.5 bg-black/90 border border-white/20 rounded-lg text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-normal">
+                      <p className="text-mystic-gold font-bold mb-1.5">💡 使用建议：</p>
+                      <p>仅在网络问题或需要切换模型时使用。同一问题不应多次重复解读，以保持"初念"的准确性。</p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {isLoadingAI && (
@@ -207,17 +238,6 @@ const MobileResult: React.FC<MobileResultProps> = ({
             )}
           </div>
         )}
-
-        {/* 重新开始按钮 */}
-        <div className="pt-4 pb-20">
-          <button
-            onClick={onRestart}
-            className="w-full bg-white/5 border border-white/10 text-white font-medium py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-98"
-          >
-            <RefreshCw size={18} />
-            <span>开始新占卜</span>
-          </button>
-        </div>
       </div>
 
       {/* 固定底部追问输入框 */}
