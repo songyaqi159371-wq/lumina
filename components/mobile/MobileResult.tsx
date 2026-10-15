@@ -208,20 +208,23 @@ const MobileResult: React.FC<MobileResultProps> = ({
               </div>
             )}
 
-            {/* 聊天历史 */}
-            {chatHistory.length > 0 && (
+            {/* 聊天历史 - 仅在有追问时显示 */}
+            {chatHistory.length > 2 && (
               <div className="space-y-3 mt-4">
-                {chatHistory.filter(msg => msg.role === 'model' || msg.parts[0].text !== `请解读牌阵。问题是：${question}`).map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-2xl p-3 ${
-                      msg.role === 'user'
-                        ? 'bg-mystic-gold/10 border border-mystic-gold/30 text-white'
-                        : 'bg-white/5 border border-white/10 text-slate-300'
-                    }`}>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap">{msg.parts[0].text}</div>
+                {chatHistory
+                  .slice(2)
+                  .filter(msg => msg.role === 'model' || msg.parts[0].text !== `请解读牌阵。问题是：${question}`)
+                  .map((msg, idx) => (
+                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl p-3 ${
+                        msg.role === 'user'
+                          ? 'bg-mystic-gold/10 border border-mystic-gold/30 text-white'
+                          : 'bg-white/5 border border-white/10 text-slate-300'
+                      }`}>
+                        <div className="text-xs leading-relaxed whitespace-pre-wrap">{msg.parts[0].text}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 {isSendingFollowUp && (
                   <div className="flex justify-start">
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-2">
